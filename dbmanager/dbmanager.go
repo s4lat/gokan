@@ -11,7 +11,6 @@ import (
 )
 
 type DBManager interface {
-	CreatePerson(person *Person) error
 	RecreateAllTables() error
 	IsTableExist(table_name string) (bool, error)
 }
@@ -29,43 +28,6 @@ func NewPostgresDB(dbURL string) (PostgresDB, error) {
 	return PostgresDB{dbPool}, nil
 }
 
-// Creates new row in table 'person' with values from p
-// Values from created row pass to p by address
-func (pm *PostgresDB) CreatePerson(p *Person) error {
-	sql := ("INSERT INTO " +
-		"person (username, first_name, last_name, email, password_hash) " +
-		"VALUES ($1, $2, $3, $4, $5)" +
-		"RETURNING *")
-
-	var tmpPerson Person
-	err := pm.QueryRow(context.Background(), sql,
-		p.Username,
-		p.FirstName,
-		p.LastName,
-		p.Email,
-		p.PasswordHash,
-	).Scan(
-		&tmpPerson.ID,
-		&tmpPerson.Username,
-		&tmpPerson.FirstName,
-		&tmpPerson.LastName,
-		&tmpPerson.Email,
-		&tmpPerson.PasswordHash,
-	)
-
-	if err != nil {
-		return fmt.Errorf("CreatePerson() -> %w", err)
-	}
-
-	p.ID = tmpPerson.ID
-	p.Username = tmpPerson.Username
-	p.FirstName = tmpPerson.FirstName
-	p.LastName = tmpPerson.LastName
-	p.Email = tmpPerson.Email
-	p.PasswordHash = tmpPerson.PasswordHash
-	return nil
-}
-
 // Delete previously created and create all new tables required by the GoKan
 func (pm *PostgresDB) RecreateAllTables() error {
 	err := pm.dropAllTables()
@@ -77,11 +39,11 @@ func (pm *PostgresDB) RecreateAllTables() error {
 		createPersonTableSQL = ("" +
 			"CREATE TABLE person (" +
 			"person_id serial PRIMARY KEY," +
-			"username VARCHAR UNIQUE NOT NULL," +
+			"username VARCHAR NOT NULL," +
 			"first_name VARCHAR NOT NULL," +
 			"last_name VARCHAR NOT NULL," +
-			"email VARCHAR UNIQUE NOT NULL," +
-			"password_hash VARCHAR NOT NULL" +
+			"email VARCHAR NOT NULL," +
+			"password VARCHAR NOT NULL" +
 			");")
 
 		createBoardTableSQL = ("" +

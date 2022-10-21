@@ -1,7 +1,5 @@
 {
-	"persons": [
-		{"person_id": 1, "username": "s4lat", "first_name": "Maxim", "last_name": "Zakazchik", "email": "s4lat@mail.ru", "password_hash": "abcdef123"},
-		{"person_id": 2, "username": "bubbl3gym", "first_name": "Kristina", "last_name": "Shvonkina", "email": "kris@mail.com", "password_hash": "keklol2167723jasd"},
-		{"person_id": 3, "username": "bratishkinoff", "first_name": "Vova", "last_name": "Popov", "email": "popa13@mail.ru", "password_hash": "ashdasdh231asdh"}
+	"tables": [
+		{"table_name"}
 	]
 }
