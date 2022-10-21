@@ -165,3 +165,35 @@ func TestGetPersonByEmail(t *testing.T) {
 		}
 	}
 }
+
+func TestGetPersonByUsername(t *testing.T) {
+	if err := dbManager.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+
+	mockData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := dbManager.GetPersonByUsername("akaksda"); err == nil {
+		t.Error("Searching for non-existent username not throwing error")
+	}
+
+	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
+	for _, person := range mockData.Persons {
+		dbManager.CreatePerson(person)
+
+		obtainedPerson, err := dbManager.GetPersonByUsername(person.Username)
+		if err != nil {
+			t.Error(err)
+		}
+
+		t.Logf("Obtained: %v", obtainedPerson)
+
+		if !cmp.Equal(obtainedPerson, person, cmpIgnore) {
+			t.Errorf("Obtained person not equal to mocked: \n\t%+v \n\t%+v",
+				obtainedPerson, person)
+		}
+	}
+}
