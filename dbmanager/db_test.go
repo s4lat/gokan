@@ -82,9 +82,6 @@ func TestCreatePerson(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// created_persons := make([]Person, len(mockData.Persons))
-	// copy(created_persons, mockData.Persons)
-
 	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
 	for _, person := range mockData.Persons {
 		createdPerson, err := dbManager.CreatePerson(person)
@@ -93,12 +90,46 @@ func TestCreatePerson(t *testing.T) {
 		}
 
 		if !cmp.Equal(createdPerson, person, cmpIgnore) {
-			t.Errorf("Created persons not equal: \n\t%+v \n\t%+v",
+			t.Errorf("Created person not equal to mocked: \n\t%+v \n\t%+v",
 				createdPerson, person)
 		}
+
+		t.Logf("Created: %v", createdPerson)
 	}
 
 	if _, err := dbManager.CreatePerson(mockData.Persons[0]); err == nil {
 		t.Error("CreatePerson() does't throw error when creating rows with same UNIQUE fields")
+	}
+}
+
+func TestGetPersonByID(t *testing.T) {
+	if err := dbManager.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+
+	mockData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := dbManager.GetPersonByID(3030); err == nil {
+		t.Error("Searching for non-existent ID not throwing error")
+	}
+
+	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
+	for _, person := range mockData.Persons {
+		dbManager.CreatePerson(person)
+
+		obtainedPerson, err := dbManager.GetPersonByID(person.ID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		t.Logf("Obtained: %v", obtainedPerson)
+
+		if !cmp.Equal(obtainedPerson, person, cmpIgnore) {
+			t.Errorf("Obtained person not equal to mocked: \n\t%+v \n\t%+v",
+				obtainedPerson, person)
+		}
 	}
 }
