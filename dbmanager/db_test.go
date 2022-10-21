@@ -23,15 +23,21 @@ func TestRecreateAllTables(t *testing.T) {
 		t.Error(err)
 	}
 
-	if isExist, err := dbManager.IsTableExist("person"); err != nil {
-		t.Error(err)
-	} else if !isExist {
-		t.Error("Table 'person' does not created")
+	tables := []string{"person", "board", "task", "subtask", "tag", "task_tag"}
+	for _, table := range tables {
+		if isExist, err := dbManager.IsTableExist(table); err != nil {
+			t.Error(err)
+		} else if !isExist {
+			t.Errorf("Table '%s' does not created", table)
+		}
 	}
 }
 
 func TestIsTableExist(t *testing.T) {
-	dbManager.RecreateAllTables()
+	err := dbManager.RecreateAllTables()
+	if err != nil {
+		t.Error(err)
+	}
 
 	if isExist, err := dbManager.IsTableExist("kek"); err != nil {
 		t.Error(err)
@@ -44,6 +50,4 @@ func TestIsTableExist(t *testing.T) {
 	} else if !isExist {
 		t.Error("Table 'person' does not exist but it exist")
 	}
-
-	// Checking by raw SQL
 }
