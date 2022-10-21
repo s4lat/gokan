@@ -73,7 +73,9 @@ func (pm *PostgresDB) RecreateAllTables() error {
 		createTagTableSQL = ("" +
 			"CREATE TABLE tag (" +
 			"tag_id serial PRIMARY KEY," +
-			"tag_name VARCHAR NOT NULL" +
+			"tag_name VARCHAR NOT NULL," +
+			"description VARCHAR NOT NULL," +
+			"board_id INTEGER REFERENCES board (board_id) ON DELETE CASCADE" +
 			");")
 
 		createTaskTagTableSQL = ("" +
@@ -81,6 +83,13 @@ func (pm *PostgresDB) RecreateAllTables() error {
 			"task_id INTEGER REFERENCES task (task_id) ON DELETE CASCADE," +
 			"tag_id INTEGER REFERENCES tag (tag_id) ON DELETE CASCADE," +
 			"CONSTRAINT task_tag_pkey PRIMARY KEY (task_id, tag_id)" +
+			");")
+
+		createContributorTableSQL = ("" +
+			"CREATE TABLE contributor (" +
+			"person_id INTEGER REFERENCES person (person_id) ON DELETE CASCADE," +
+			"board_id INTEGER REFERENCES board (board_id) ON DELETE CASCADE," +
+			"CONSTRAINT contributor_pkey PRIMARY KEY (person_id, board_id)" +
 			");")
 	)
 
@@ -91,6 +100,7 @@ func (pm *PostgresDB) RecreateAllTables() error {
 		createSubtaskTableSQL,
 		createTagTableSQL,
 		createTaskTagTableSQL,
+		createContributorTableSQL,
 	}
 
 	for _, sql := range sql_strings {

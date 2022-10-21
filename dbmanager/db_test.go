@@ -23,7 +23,7 @@ func TestRecreateAllTables(t *testing.T) {
 		t.Error(err)
 	}
 
-	tables := []string{"person", "board", "task", "subtask", "tag", "task_tag"}
+	tables := []string{"person", "board", "task", "subtask", "tag", "task_tag", "contributor"}
 	for _, table := range tables {
 		if isExist, err := dbManager.IsTableExist(table); err != nil {
 			t.Error(err)
