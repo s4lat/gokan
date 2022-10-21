@@ -3,7 +3,7 @@ module GoKan
 go 1.18
 
 require (
-	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
+	github.com/google/go-cmp v0.5.9
 	github.com/jackc/pgx/v5 v5.0.3
 )
 
