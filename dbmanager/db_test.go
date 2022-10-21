@@ -82,22 +82,23 @@ func TestCreatePerson(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	created_persons := make([]Person, len(mockData.Persons))
-	copy(created_persons, mockData.Persons)
+	// created_persons := make([]Person, len(mockData.Persons))
+	// copy(created_persons, mockData.Persons)
 
-	cmpIgnore := cmpopts.IgnoreFields(Person{}, "ID", "Boards", "AssignedTasks")
-	for i, _ := range created_persons {
-		if err := dbManager.CreatePerson(&created_persons[i]); err != nil {
+	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
+	for _, person := range mockData.Persons {
+		createdPerson, err := dbManager.CreatePerson(person)
+		if err != nil {
 			t.Error(err)
 		}
 
-		if !cmp.Equal(created_persons[i], mockData.Persons[i], cmpIgnore) {
+		if !cmp.Equal(createdPerson, person, cmpIgnore) {
 			t.Errorf("Created persons not equal: \n\t%+v \n\t%+v",
-				created_persons[i], mockData.Persons[i])
+				createdPerson, person)
 		}
 	}
 
-	if err := dbManager.CreatePerson(&mockData.Persons[0]); err == nil {
+	if _, err := dbManager.CreatePerson(mockData.Persons[0]); err == nil {
 		t.Error("CreatePerson() does't throw error when creating rows with same UNIQUE fields")
 	}
 }
