@@ -21,7 +21,7 @@ type Task struct {
 	Name        string
 	Description string
 	BoardID     uint32
-	CreatorID   uint32
+	AuthorID    uint32
 	ExecutorID  uint32
 }
 

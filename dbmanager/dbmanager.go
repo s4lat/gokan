@@ -19,6 +19,7 @@ type PostgresDB struct {
 	*pgxpool.Pool
 }
 
+// Creating returning new instance of PostgresDB with pool connected to dbURL
 func NewPostgresDB(dbURL string) (PostgresDB, error) {
 	dbPool, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
@@ -27,6 +28,7 @@ func NewPostgresDB(dbURL string) (PostgresDB, error) {
 	return PostgresDB{dbPool}, nil
 }
 
+// Delete previously created and create all new tables required by the GoKan
 func (pm *PostgresDB) RecreateAllTables() error {
 	err := pm.dropAllTables()
 	if err != nil {
@@ -43,15 +45,64 @@ func (pm *PostgresDB) RecreateAllTables() error {
 			"email VARCHAR NOT NULL," +
 			"password VARCHAR NOT NULL" +
 			");")
+
+		createBoardTableSQL = ("" +
+			"CREATE TABLE board (" +
+			"board_id serial PRIMARY KEY," +
+			"board_name VARCHAR NOT NULL," +
+			"owner_id INTEGER REFERENCES person (person_id) ON DELETE SET NULL" +
+			");")
+
+		createTaskTableSQL = ("" +
+			"CREATE TABLE task (" +
+			"task_id serial PRIMARY KEY," +
+			"task_name VARCHAR NOT NULL," +
+			"task_description VARCHAR," +
+			"board_id INTEGER REFERENCES board (board_id) ON DELETE CASCADE," +
+			"author_id INTEGER REFERENCES person (person_id) ON DELETE SET NULL," +
+			"executor_id INTEGER REFERENCES person (person_id) ON DELETE SET NULL" +
+			");")
+
+		createSubtaskTableSQL = ("" +
+			"CREATE TABLE subtask (" +
+			"subtask_id serial PRIMARY KEY," +
+			"subtask_name VARCHAR NOT NULL," +
+			"parent_task_id INTEGER REFERENCES task (task_id) ON DELETE CASCADE" +
+			");")
+
+		createTagTableSQL = ("" +
+			"CREATE TABLE tag (" +
+			"tag_id serial PRIMARY KEY," +
+			"tag_name VARCHAR NOT NULL" +
+			");")
+
+		createTaskTagTableSQL = ("" +
+			"CREATE TABLE task_tag (" +
+			"task_id INTEGER REFERENCES task (task_id) ON DELETE CASCADE," +
+			"tag_id INTEGER REFERENCES tag (tag_id) ON DELETE CASCADE," +
+			"CONSTRAINT task_tag_pkey PRIMARY KEY (task_id, tag_id)" +
+			");")
 	)
 
-	if _, err := pm.Exec(context.Background(), createPersonTableSQL); err != nil {
-		return fmt.Errorf("RecreateAllTables() -> %w", err)
+	sql_strings := []string{
+		createPersonTableSQL,
+		createBoardTableSQL,
+		createTaskTableSQL,
+		createSubtaskTableSQL,
+		createTagTableSQL,
+		createTaskTagTableSQL,
+	}
+
+	for _, sql := range sql_strings {
+		if _, err := pm.Exec(context.Background(), sql); err != nil {
+			return fmt.Errorf("RecreateAllTables() -> %w", err)
+		}
 	}
 
 	return nil
 }
 
+// Returning true if table exist in 'public' scheme, else false
 func (pm *PostgresDB) IsTableExist(table_name string) (bool, error) {
 	const sql = ("" +
 		"SELECT EXISTS (" +
@@ -69,6 +120,7 @@ func (pm *PostgresDB) IsTableExist(table_name string) (bool, error) {
 	return isExist, nil
 }
 
+// Drops public scheme with all tables
 func (pm *PostgresDB) dropAllTables() error {
 	const (
 		sql1 = "DROP SCHEMA public CASCADE"
@@ -76,11 +128,11 @@ func (pm *PostgresDB) dropAllTables() error {
 	)
 
 	if _, err := pm.Exec(context.Background(), sql1); err != nil {
-		return fmt.Errorf("DropAllTables() -> %w", err)
+		return fmt.Errorf("dropAllTables() -> %w", err)
 	}
 
 	if _, err := pm.Exec(context.Background(), sql2); err != nil {
-		return fmt.Errorf("DropAllTables() -> %w", err)
+		return fmt.Errorf("dropAllTables() -> %w", err)
 	}
 
 	return nil
