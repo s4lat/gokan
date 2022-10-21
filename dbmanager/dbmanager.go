@@ -13,6 +13,7 @@ import (
 type DBManager interface {
 	CreatePerson(p Person) (Person, error)
 	GetPersonByID(person_id uint32) (Person, error)
+	GetPersonByEmail(email string) (Person, error)
 	RecreateAllTables() error
 	IsTableExist(table_name string) (bool, error)
 }
@@ -30,6 +31,27 @@ func NewPostgresDB(dbURL string) (PostgresDB, error) {
 	return PostgresDB{dbPool}, nil
 }
 
+// Searching for person in DB by email, returning finded Person
+func (pdb *PostgresDB) GetPersonByEmail(email string) (Person, error) {
+	sql := "SELECT * FROM person WHERE email = $1;"
+
+	var obtainedPerson Person
+	err := pdb.QueryRow(context.Background(), sql, email).Scan(
+		&obtainedPerson.ID,
+		&obtainedPerson.Username,
+		&obtainedPerson.FirstName,
+		&obtainedPerson.LastName,
+		&obtainedPerson.Email,
+		&obtainedPerson.PasswordHash,
+	)
+
+	if err != nil {
+		return Person{}, fmt.Errorf("GetPersonByID() -> %w", err)
+	}
+	return obtainedPerson, nil
+}
+
+// Searching for person in DB by id, returning finded Person
 func (pdb *PostgresDB) GetPersonByID(person_id uint32) (Person, error) {
 	sql := "SELECT * FROM person WHERE person_id = $1;"
 
