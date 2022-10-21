@@ -1,12 +1,12 @@
 package dbmanager
 
 type Person struct {
-	ID            uint32
-	Username      string
-	FirstName     string
-	LastName      string
-	Email         string
-	PWDH          string
+	ID            uint32  `json:"person_id"`
+	Username      string  `json:"username"`
+	FirstName     string  `json:"first_name"`
+	LastName      string  `json:"last_name"`
+	Email         string  `json:"email"`
+	PasswordHash  string  `json:"password_hash"`
 	Boards        []Board // LoadPersonBoards(), by board_id from contributor table
 	AssignedTasks []Task  // LoadPersonAssignedTasks(), from executor_id in task
 }
