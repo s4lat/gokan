@@ -12,6 +12,7 @@ import (
 
 type DBManager interface {
 	CreatePerson(p Person) (Person, error)
+	GetPersonByID(person_id uint32) (Person, error)
 	RecreateAllTables() error
 	IsTableExist(table_name string) (bool, error)
 }
@@ -29,16 +30,35 @@ func NewPostgresDB(dbURL string) (PostgresDB, error) {
 	return PostgresDB{dbPool}, nil
 }
 
+func (pdb *PostgresDB) GetPersonByID(person_id uint32) (Person, error) {
+	sql := "SELECT * FROM person WHERE person_id = $1;"
+
+	var obtainedPerson Person
+	err := pdb.QueryRow(context.Background(), sql, person_id).Scan(
+		&obtainedPerson.ID,
+		&obtainedPerson.Username,
+		&obtainedPerson.FirstName,
+		&obtainedPerson.LastName,
+		&obtainedPerson.Email,
+		&obtainedPerson.PasswordHash,
+	)
+
+	if err != nil {
+		return Person{}, fmt.Errorf("GetPersonByID() -> %w", err)
+	}
+	return obtainedPerson, nil
+}
+
 // Creates new row in table 'person' with values from p fields
 // Returning created Person
-func (pm *PostgresDB) CreatePerson(p Person) (Person, error) {
+func (pdb *PostgresDB) CreatePerson(p Person) (Person, error) {
 	sql := ("INSERT INTO " +
 		"person (username, first_name, last_name, email, password_hash) " +
 		"VALUES ($1, $2, $3, $4, $5)" +
-		"RETURNING *")
+		"RETURNING *;")
 
 	var createdPerson Person
-	err := pm.QueryRow(context.Background(), sql,
+	err := pdb.QueryRow(context.Background(), sql,
 		p.Username,
 		p.FirstName,
 		p.LastName,
@@ -61,8 +81,8 @@ func (pm *PostgresDB) CreatePerson(p Person) (Person, error) {
 }
 
 // Delete previously created and create all new tables required by the GoKan
-func (pm *PostgresDB) RecreateAllTables() error {
-	err := pm.dropAllTables()
+func (pdb *PostgresDB) RecreateAllTables() error {
+	err := pdb.dropAllTables()
 	if err != nil {
 		return fmt.Errorf("RecreateAllTables() -> %w", err)
 	}
@@ -136,7 +156,7 @@ func (pm *PostgresDB) RecreateAllTables() error {
 	}
 
 	for _, sql := range sql_strings {
-		if _, err := pm.Exec(context.Background(), sql); err != nil {
+		if _, err := pdb.Exec(context.Background(), sql); err != nil {
 			return fmt.Errorf("RecreateAllTables() -> %w", err)
 		}
 	}
@@ -145,14 +165,14 @@ func (pm *PostgresDB) RecreateAllTables() error {
 }
 
 // Returning true if table exist in 'public' scheme, else false
-func (pm *PostgresDB) IsTableExist(table_name string) (bool, error) {
+func (pdb *PostgresDB) IsTableExist(table_name string) (bool, error) {
 	const sql = ("" +
 		"SELECT EXISTS (" +
 		"SELECT FROM pg_tables " +
 		"WHERE schemaname = 'public' " +
-		"AND tablename = $1)")
+		"AND tablename = $1);")
 
-	row := pm.QueryRow(context.Background(), sql, table_name)
+	row := pdb.QueryRow(context.Background(), sql, table_name)
 
 	var isExist bool
 	if err := row.Scan(&isExist); err != nil {
@@ -163,17 +183,17 @@ func (pm *PostgresDB) IsTableExist(table_name string) (bool, error) {
 }
 
 // Drops public scheme with all tables
-func (pm *PostgresDB) dropAllTables() error {
+func (pdb *PostgresDB) dropAllTables() error {
 	const (
 		sql1 = "DROP SCHEMA public CASCADE"
 		sql2 = "CREATE SCHEMA public;"
 	)
 
-	if _, err := pm.Exec(context.Background(), sql1); err != nil {
+	if _, err := pdb.Exec(context.Background(), sql1); err != nil {
 		return fmt.Errorf("dropAllTables() -> %w", err)
 	}
 
-	if _, err := pm.Exec(context.Background(), sql2); err != nil {
+	if _, err := pdb.Exec(context.Background(), sql2); err != nil {
 		return fmt.Errorf("dropAllTables() -> %w", err)
 	}
 
