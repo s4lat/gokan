@@ -10,6 +10,7 @@ import (
 	// "log"
 )
 
+// DBManager - interface for data base managing.
 type DBManager interface {
 	CreatePerson(p Person) (Person, error)
 	GetPersonByID(person_id uint32) (Person, error)
@@ -19,11 +20,12 @@ type DBManager interface {
 	IsTableExist(table_name string) (bool, error)
 }
 
+// PostgresDB - struct that implements DBManager interface using pgx module.
 type PostgresDB struct {
 	*pgxpool.Pool
 }
 
-// Creating returning new instance of PostgresDB with pool connected to dbURL
+// NewPostgresDB - returning new instance of PostgresDB with pgxpool connected to dbURL.
 func NewPostgresDB(dbURL string) (PostgresDB, error) {
 	dbPool, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
@@ -32,7 +34,7 @@ func NewPostgresDB(dbURL string) (PostgresDB, error) {
 	return PostgresDB{dbPool}, nil
 }
 
-// Searching for person in DB by username, returning finded Person
+// GetPersonByUsername - searching for person in DB by username, returning finded Person.
 func (pdb *PostgresDB) GetPersonByUsername(username string) (Person, error) {
 	sql := "SELECT * FROM person WHERE username = $1;"
 
@@ -52,7 +54,7 @@ func (pdb *PostgresDB) GetPersonByUsername(username string) (Person, error) {
 	return obtainedPerson, nil
 }
 
-// Searching for person in DB by email, returning finded Person
+// GetPersonByEmail - searching for person in DB by email, returning finded Person.
 func (pdb *PostgresDB) GetPersonByEmail(email string) (Person, error) {
 	sql := "SELECT * FROM person WHERE email = $1;"
 
@@ -72,7 +74,7 @@ func (pdb *PostgresDB) GetPersonByEmail(email string) (Person, error) {
 	return obtainedPerson, nil
 }
 
-// Searching for person in DB by id, returning finded Person
+// GetPersonByID - searching for person in DB by id, returning finded Person.
 func (pdb *PostgresDB) GetPersonByID(person_id uint32) (Person, error) {
 	sql := "SELECT * FROM person WHERE person_id = $1;"
 
@@ -92,8 +94,8 @@ func (pdb *PostgresDB) GetPersonByID(person_id uint32) (Person, error) {
 	return obtainedPerson, nil
 }
 
-// Creates new row in table 'person' with values from p fields
-// Returning created Person
+// CreatePerson - Creates new row in table 'person' with values from `p` fields,
+// Returning created Person.
 func (pdb *PostgresDB) CreatePerson(p Person) (Person, error) {
 	sql := ("INSERT INTO " +
 		"person (username, first_name, last_name, email, password_hash) " +
@@ -123,7 +125,7 @@ func (pdb *PostgresDB) CreatePerson(p Person) (Person, error) {
 	return createdPerson, nil
 }
 
-// Delete previously created and create all new tables required by the GoKan
+// RecreateAllTables - drops previously created table and creates tables required by the GoKan.
 func (pdb *PostgresDB) RecreateAllTables() error {
 	err := pdb.dropAllTables()
 	if err != nil {
@@ -207,7 +209,7 @@ func (pdb *PostgresDB) RecreateAllTables() error {
 	return nil
 }
 
-// Returning true if table exist in 'public' scheme, else false
+// IsTableExist - returning `true` if table exist in 'public' scheme, else `false`.
 func (pdb *PostgresDB) IsTableExist(table_name string) (bool, error) {
 	const sql = ("" +
 		"SELECT EXISTS (" +
@@ -225,7 +227,7 @@ func (pdb *PostgresDB) IsTableExist(table_name string) (bool, error) {
 	return isExist, nil
 }
 
-// Drops public scheme with all tables
+// dropAllTables - drops public scheme with all tables.
 func (pdb *PostgresDB) dropAllTables() error {
 	const (
 		sql1 = "DROP SCHEMA public CASCADE"
