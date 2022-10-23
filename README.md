@@ -1,2 +1,2 @@
 # gokan
-Open-Source kanban written on Go
+Open-Source kanban board written on Go
