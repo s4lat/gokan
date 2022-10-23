@@ -1,4 +1,4 @@
-module GoKan
+module github.com/s4lat/GoKan
 
 go 1.18
 
