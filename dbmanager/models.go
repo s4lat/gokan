@@ -38,8 +38,8 @@ type Subtask struct {
 }
 
 type Tag struct {
-	ID         uint32
-	Name       string
-	Descripton string
-	BoardID    uint32
+	ID          uint32
+	Name        string
+	Description string
+	BoardID     uint32
 }
