@@ -1,53 +1,53 @@
 {
-   "persons":[
-      {
-         "person_id":1,
-         "username":"s4lat",
-         "first_name":"Maxim",
-         "last_name":"Zakazchik",
-         "email":"s4lat@mail.ru",
-         "password_hash":"abcdef123"
-      },
-      {
-         "person_id":2,
-         "username":"bubbl3gym",
-         "first_name":"Kristina",
-         "last_name":"Shvonkina",
-         "email":"kris@mail.com",
-         "password_hash":"keklol2167723jasd"
-      },
-      {
-         "person_id":3,
-         "username":"bratishkinoff",
-         "first_name":"Vova",
-         "last_name":"Popov",
-         "email":"popa13@mail.ru",
-         "password_hash":"ashdasdh231asdh"
-      },
-      {
-         "person_id":4,
-         "username":"GalaxyShad",
-         "first_name":"Vadim",
-         "last_name":"Kadyring",
-         "email":"shad@mail.ru",
-         "password_hash":"keklol"
-      }
-   ],
-   "boards":[
-      {
-         "board_id":1,
-         "board_name":"GoSavingsBot",
-         "owner_id":1
-      },
-      {
-         "board_id":2,
-         "board_name":"GoKan",
-         "owner_id":1
-      },
-      {
-         "board_id":3,
-         "board_name":"ZumaHD",
-         "owner_id":4
-      }
-   ]
+  "boards": [
+    {
+      "board_id": 1,
+      "board_name": "GoSavingsBot",
+      "owner_id": 1
+    },
+    {
+      "board_id": 2,
+      "board_name": "GoKan",
+      "owner_id": 1
+    },
+    {
+      "board_id": 3,
+      "board_name": "ZumaHD",
+      "owner_id": 4
+    }
+  ],
+  "persons": [
+    {
+      "email": "s4lat@mail.ru",
+      "first_name": "Maxim",
+      "last_name": "Zakazchik",
+      "password_hash": "abcdef123",
+      "person_id": 1,
+      "username": "s4lat"
+    },
+    {
+      "email": "kris@mail.com",
+      "first_name": "Kristina",
+      "last_name": "Shvonkina",
+      "password_hash": "keklol2167723jasd",
+      "person_id": 2,
+      "username": "bubbl3gym"
+    },
+    {
+      "email": "popa13@mail.ru",
+      "first_name": "Vova",
+      "last_name": "Popov",
+      "password_hash": "ashdasdh231asdh",
+      "person_id": 3,
+      "username": "bratishkinoff"
+    },
+    {
+      "email": "shad@mail.ru",
+      "first_name": "Vadim",
+      "last_name": "Kadyring",
+      "password_hash": "keklol",
+      "person_id": 4,
+      "username": "GalaxyShad"
+    }
+  ]
 }
