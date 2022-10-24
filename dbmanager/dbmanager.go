@@ -12,6 +12,7 @@ import (
 
 // DBManager - interface for data base managing.
 type DBManager interface {
+	CreateBoard(b Board) (Board, error)
 	CreatePerson(p Person) (Person, error)
 	GetPersonByID(person_id uint32) (Person, error)
 	GetPersonByEmail(email string) (Person, error)
@@ -52,6 +53,28 @@ func (pdb *PostgresDB) GetPersonByUsername(username string) (Person, error) {
 		return Person{}, fmt.Errorf("GetPersonByUsername() -> %w", err)
 	}
 	return obtainedPerson, nil
+}
+
+// CreateBoard - Creates new row in table 'board' with values from `b` fields,
+// Returning created Board.
+func (pdb *PostgresDB) CreateBoard(b Board) (Board, error) {
+	sql := "INSERT INTO board (board_name, owner_id) VALUES ($1, $2) RETURNING *;"
+
+	var createdBoard Board
+	err := pdb.QueryRow(context.Background(), sql,
+		b.Name,
+		b.OwnerID,
+	).Scan(
+		&createdBoard.ID,
+		&createdBoard.Name,
+		&createdBoard.OwnerID,
+	)
+
+	if err != nil {
+		return Board{}, fmt.Errorf("CreateBoard() -> %w", err)
+	}
+
+	return createdBoard, nil
 }
 
 // GetPersonByEmail - searching for person in DB by email, returning finded Person.
@@ -147,7 +170,7 @@ func (pdb *PostgresDB) RecreateAllTables() error {
 			"CREATE TABLE board (" +
 			"board_id serial PRIMARY KEY," +
 			"board_name VARCHAR NOT NULL," +
-			"owner_id INTEGER REFERENCES person (person_id) ON DELETE SET NULL" +
+			"owner_id INTEGER REFERENCES person (person_id) ON DELETE CASCADE NOT NULL" +
 			");")
 
 		createTaskTableSQL = ("" +

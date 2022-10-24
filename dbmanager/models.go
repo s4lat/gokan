@@ -12,9 +12,9 @@ type Person struct {
 }
 
 type Board struct {
-	ID           uint32
-	Name         string
-	OwnerID      uint32
+	ID           uint32   `json:"board_id"`
+	Name         string   `json:"board_name"`
+	OwnerID      uint32   `json:"owner_id"`
 	Contributors []Person // LoadBoardContributors() by person_id from contributor table
 	Tasks        []Task   // LoadBoardTasksfrom board_id in task table
 	Tags         []Tag    // from board_id in tag table
