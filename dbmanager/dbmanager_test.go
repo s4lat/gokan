@@ -8,19 +8,21 @@ import (
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/s4lat/gokan/models"
+	"github.com/s4lat/gokan/postgresdb"
 	"os"
 	"testing"
 )
 
 var (
 	DB_URL      = "postgres://user:password@localhost:5432/test"
-	postgres, _ = NewPostgresDB(DB_URL)
+	postgres, _ = postgresdb.NewPostgresDB(DB_URL)
 	dbManager   = DBManager(&postgres)
 )
 
 type MockedData struct {
-	Persons []Person `json:"persons"`
-	Boards  []Board  `json:"boards"`
+	Persons []models.Person `json:"persons"`
+	Boards  []models.Board  `json:"boards"`
 }
 
 func LoadMockData() (MockedData, error) {
@@ -94,7 +96,7 @@ func TestCreatePerson(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
+	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
 	for _, person := range mockData.Persons {
 		createdPerson, err := dbManager.CreatePerson(person)
 		if err != nil {
@@ -132,7 +134,7 @@ func TestGetPersonByID(t *testing.T) {
 		t.Error("Searching for non-existent ID not throwing error")
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
+	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
 	for _, person := range mockData.Persons {
 		obtainedPerson, err := dbManager.GetPersonByID(person.ID)
 		if err != nil {
@@ -166,7 +168,7 @@ func TestGetPersonByEmail(t *testing.T) {
 		t.Error("Searching for non-existent email not throwing error")
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
+	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
 	for _, person := range mockData.Persons {
 		obtainedPerson, err := dbManager.GetPersonByEmail(person.Email)
 		if err != nil {
@@ -200,7 +202,7 @@ func TestGetPersonByUsername(t *testing.T) {
 		t.Error("Searching for non-existent username not throwing error")
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
+	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
 	for _, person := range mockData.Persons {
 		obtainedPerson, err := dbManager.GetPersonByUsername(person.Username)
 		if err != nil {
@@ -230,7 +232,7 @@ func TestCreateBoard(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(Board{}, "Contributors", "Tasks", "Tags")
+	cmpIgnore := cmpopts.IgnoreFields(models.Board{}, "Contributors", "Tasks", "Tags")
 	for _, board := range mockData.Boards {
 		t.Logf("%v", board)
 		createdBoard, err := dbManager.CreateBoard(board)
@@ -246,7 +248,7 @@ func TestCreateBoard(t *testing.T) {
 		t.Logf("Created: %v", createdBoard)
 	}
 
-	badBoard := Board{Name: "badBoard", OwnerID: 1337}
+	badBoard := models.Board{Name: "badBoard", OwnerID: 1337}
 	if _, err := dbManager.CreateBoard(badBoard); err == nil {
 		t.Error("CreateBoard() does't throw error when creating rows with non-existent owner_id")
 	}
