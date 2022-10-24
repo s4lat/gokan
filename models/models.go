@@ -1,4 +1,4 @@
-package dbmanager
+package models
 
 type Person struct {
 	ID            uint32  `json:"person_id"`
