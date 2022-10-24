@@ -20,6 +20,7 @@ var (
 
 type MockedData struct {
 	Persons []Person `json:"persons"`
+	Boards  []Board  `json:"boards"`
 }
 
 func LoadMockData() (MockedData, error) {
@@ -35,7 +36,18 @@ func LoadMockData() (MockedData, error) {
 	return mockData, nil
 }
 
+func CreateMockedPersons(mockData MockedData) error {
+	for _, person := range mockData.Persons {
+		_, err := dbManager.CreatePerson(person)
+		if err != nil {
+			return fmt.Errorf("CreateMockedPersons -> %w", err)
+		}
+	}
+	return nil
+}
+
 func TestMain(m *testing.M) {
+
 	m.Run()
 }
 
@@ -90,7 +102,7 @@ func TestCreatePerson(t *testing.T) {
 		}
 
 		if !cmp.Equal(createdPerson, person, cmpIgnore) {
-			t.Errorf("Created person not equal to mocked: \n\t%+v \n\t%+v",
+			t.Errorf("Created person not equal to mocked: \n\t%v \n\t%v",
 				createdPerson, person)
 		}
 
@@ -112,14 +124,16 @@ func TestGetPersonByID(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if err := CreateMockedPersons(mockData); err != nil {
+		t.Fatal(err)
+	}
+
 	if _, err := dbManager.GetPersonByID(3030); err == nil {
 		t.Error("Searching for non-existent ID not throwing error")
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
 	for _, person := range mockData.Persons {
-		dbManager.CreatePerson(person)
-
 		obtainedPerson, err := dbManager.GetPersonByID(person.ID)
 		if err != nil {
 			t.Error(err)
@@ -128,7 +142,7 @@ func TestGetPersonByID(t *testing.T) {
 		t.Logf("Obtained: %v", obtainedPerson)
 
 		if !cmp.Equal(obtainedPerson, person, cmpIgnore) {
-			t.Errorf("Obtained person not equal to mocked: \n\t%+v \n\t%+v",
+			t.Errorf("Obtained person not equal to mocked: \n\t%v \n\t%v",
 				obtainedPerson, person)
 		}
 	}
@@ -144,14 +158,16 @@ func TestGetPersonByEmail(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if err := CreateMockedPersons(mockData); err != nil {
+		t.Fatal(err)
+	}
+
 	if _, err := dbManager.GetPersonByEmail("aaa321@mail.ru"); err == nil {
 		t.Error("Searching for non-existent email not throwing error")
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
 	for _, person := range mockData.Persons {
-		dbManager.CreatePerson(person)
-
 		obtainedPerson, err := dbManager.GetPersonByEmail(person.Email)
 		if err != nil {
 			t.Error(err)
@@ -160,7 +176,7 @@ func TestGetPersonByEmail(t *testing.T) {
 		t.Logf("Obtained: %v", obtainedPerson)
 
 		if !cmp.Equal(obtainedPerson, person, cmpIgnore) {
-			t.Errorf("Obtained person not equal to mocked: \n\t%+v \n\t%+v",
+			t.Errorf("Obtained person not equal to mocked: \n\t%v \n\t%v",
 				obtainedPerson, person)
 		}
 	}
@@ -176,14 +192,16 @@ func TestGetPersonByUsername(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if err := CreateMockedPersons(mockData); err != nil {
+		t.Fatal(err)
+	}
+
 	if _, err := dbManager.GetPersonByUsername("akaksda"); err == nil {
 		t.Error("Searching for non-existent username not throwing error")
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
 	for _, person := range mockData.Persons {
-		dbManager.CreatePerson(person)
-
 		obtainedPerson, err := dbManager.GetPersonByUsername(person.Username)
 		if err != nil {
 			t.Error(err)
@@ -192,8 +210,44 @@ func TestGetPersonByUsername(t *testing.T) {
 		t.Logf("Obtained: %v", obtainedPerson)
 
 		if !cmp.Equal(obtainedPerson, person, cmpIgnore) {
-			t.Errorf("Obtained person not equal to mocked: \n\t%+v \n\t%+v",
+			t.Errorf("Obtained person not equal to mocked: \n\t%v \n\t%v",
 				obtainedPerson, person)
 		}
+	}
+}
+
+func TestCreateBoard(t *testing.T) {
+	if err := dbManager.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+
+	mockData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := CreateMockedPersons(mockData); err != nil {
+		t.Fatal(err)
+	}
+
+	cmpIgnore := cmpopts.IgnoreFields(Board{}, "Contributors", "Tasks", "Tags")
+	for _, board := range mockData.Boards {
+		t.Logf("%v", board)
+		createdBoard, err := dbManager.CreateBoard(board)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !cmp.Equal(createdBoard, board, cmpIgnore) {
+			t.Errorf("Created board not equal to mocked: \n\t%v \n\t%v",
+				createdBoard, board)
+		}
+
+		t.Logf("Created: %v", createdBoard)
+	}
+
+	badBoard := Board{Name: "badBoard", OwnerID: 1337}
+	if _, err := dbManager.CreateBoard(badBoard); err == nil {
+		t.Error("CreateBoard() does't throw error when creating rows with non-existent owner_id")
 	}
 }
