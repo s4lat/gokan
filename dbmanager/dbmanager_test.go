@@ -3,20 +3,21 @@ package dbmanager
 import (
 	// "errors"
 	// "context"
-	// "github.com/jackc/pgx/v5/pgxpool"
+	// "github.com/jackc/pgx/v5/pgxpool".
 	"encoding/json"
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/s4lat/gokan/models"
 	"github.com/s4lat/gokan/postgresdb"
-	"os"
-	"testing"
 )
 
 var (
-	DB_URL      = "postgres://user:password@localhost:5432/test"
-	postgres, _ = postgresdb.NewPostgresDB(DB_URL)
+	DBURL       = "postgres://user:password@localhost:5432/test"
+	postgres, _ = postgresdb.NewPostgresDB(DBURL)
 	dbManager   = DBManager(&postgres)
 )
 
@@ -26,13 +27,13 @@ type MockedData struct {
 }
 
 func LoadMockData() (MockedData, error) {
-	json_data, err := os.ReadFile("mock_db.json")
+	jsonData, err := os.ReadFile("mock_db.json")
 	if err != nil {
 		return MockedData{}, fmt.Errorf("LoadMockData -> %w", err)
 	}
 
 	var mockData MockedData
-	if err := json.Unmarshal(json_data, &mockData); err != nil {
+	if err := json.Unmarshal(jsonData, &mockData); err != nil {
 		return MockedData{}, fmt.Errorf("LoadMockData -> %w", err)
 	}
 	return mockData, nil

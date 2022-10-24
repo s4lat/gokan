@@ -3,12 +3,13 @@ package postgresdb
 import (
 	"context"
 	"fmt"
+
 	// "github.com/jackc/pgerrcode"
 	// "errors"
-	// "github.com/jackc/pgx/v5/pgconn"
+	// "github.com/jackc/pgx/v5/pgconn".
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/s4lat/gokan/models"
-	// "log"
+	// "log".
 )
 
 // PostgresDB - struct that implements DBManager interface using pgx module.
@@ -88,11 +89,11 @@ func (pdb *PostgresDB) GetPersonByEmail(email string) (models.Person, error) {
 }
 
 // GetPersonByID - searching for person in DB by id, returning finded Person.
-func (pdb *PostgresDB) GetPersonByID(person_id uint32) (models.Person, error) {
+func (pdb *PostgresDB) GetPersonByID(personID uint32) (models.Person, error) {
 	sql := "SELECT * FROM person WHERE person_id = $1;"
 
 	var obtainedPerson models.Person
-	err := pdb.QueryRow(context.Background(), sql, person_id).Scan(
+	err := pdb.QueryRow(context.Background(), sql, personID).Scan(
 		&obtainedPerson.ID,
 		&obtainedPerson.Username,
 		&obtainedPerson.FirstName,
@@ -203,7 +204,7 @@ func (pdb *PostgresDB) RecreateAllTables() error {
 			");")
 	)
 
-	sql_strings := []string{
+	sqlStrings := []string{
 		createPersonTableSQL,
 		createBoardTableSQL,
 		createTaskTableSQL,
@@ -213,7 +214,7 @@ func (pdb *PostgresDB) RecreateAllTables() error {
 		createContributorTableSQL,
 	}
 
-	for _, sql := range sql_strings {
+	for _, sql := range sqlStrings {
 		if _, err := pdb.Exec(context.Background(), sql); err != nil {
 			return fmt.Errorf("RecreateAllTables() -> %w", err)
 		}
@@ -223,14 +224,14 @@ func (pdb *PostgresDB) RecreateAllTables() error {
 }
 
 // IsTableExist - returning `true` if table exist in 'public' scheme, else `false`.
-func (pdb *PostgresDB) IsTableExist(table_name string) (bool, error) {
+func (pdb *PostgresDB) IsTableExist(tableName string) (bool, error) {
 	const sql = ("" +
 		"SELECT EXISTS (" +
 		"SELECT FROM pg_tables " +
 		"WHERE schemaname = 'public' " +
 		"AND tablename = $1);")
 
-	row := pdb.QueryRow(context.Background(), sql, table_name)
+	row := pdb.QueryRow(context.Background(), sql, tableName)
 
 	var isExist bool
 	if err := row.Scan(&isExist); err != nil {
