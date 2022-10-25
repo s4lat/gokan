@@ -26,6 +26,7 @@ func NewPostgresDB(dbURL string) (PostgresDB, error) {
 	return PostgresDB{dbPool}, nil
 }
 
+// GetBoardByID - searching for board in DB by ID, returning finded Board.
 func (pdb *PostgresDB) GetBoardByID(boardID uint32) (models.Board, error) {
 	sql := "SELECT * FROM board WHERE board_id = $1;"
 
@@ -155,6 +156,36 @@ func (pdb *PostgresDB) CreateBoard(b models.Board) (models.Board, error) {
 	return createdBoard, nil
 }
 
+// CreateTask - Creates new row in table 'task' with values from `t` fields,
+// Returning created Task.
+func (pdb *PostgresDB) CreateTask(t models.Task) (models.Task, error) {
+	sql := ("INSERT INTO task " +
+		"(task_name, task_description, board_id, author_id, executor_id) " +
+		"VALUES ($1, $2, $3, $4, $5) RETURNING *;")
+
+	var createdTask models.Task
+	err := pdb.QueryRow(context.Background(), sql,
+		t.Name,
+		t.Description,
+		t.BoardID,
+		t.AuthorID,
+		t.ExecutorID,
+	).Scan(
+		&createdTask.ID,
+		&createdTask.Name,
+		&createdTask.Description,
+		&createdTask.BoardID,
+		&createdTask.AuthorID,
+		&createdTask.ExecutorID,
+	)
+
+	if err != nil {
+		return models.Task{}, fmt.Errorf("CreateTask -> %w", err)
+	}
+
+	return createdTask, nil
+}
+
 // RecreateAllTables - drops previously created table and creates tables required by the GoKan.
 func (pdb *PostgresDB) RecreateAllTables() error {
 	err := pdb.dropAllTables()
@@ -186,8 +217,8 @@ func (pdb *PostgresDB) RecreateAllTables() error {
 			"task_name VARCHAR NOT NULL," +
 			"task_description VARCHAR," +
 			"board_id INTEGER REFERENCES board (board_id) ON DELETE CASCADE," +
-			"author_id INTEGER REFERENCES person (person_id) ON DELETE SET NULL," +
-			"executor_id INTEGER REFERENCES person (person_id) ON DELETE SET NULL" +
+			"author_id INTEGER REFERENCES person (person_id) ON DELETE SET NULL NOT NULL," +
+			"executor_id INTEGER REFERENCES person (person_id) ON DELETE SET DEFAULT DEFAULT (0)" +
 			");")
 
 		createSubtaskTableSQL = ("" +
@@ -220,6 +251,10 @@ func (pdb *PostgresDB) RecreateAllTables() error {
 			");")
 	)
 
+	nullPersonSQL := ("INSERT INTO " +
+		"person (person_id, username, first_name, last_name, email, password_hash) " +
+		"VALUES (0, 'null', 'null', 'null', 'null', 'null')")
+
 	sqlStrings := []string{
 		createPersonTableSQL,
 		createBoardTableSQL,
@@ -228,6 +263,7 @@ func (pdb *PostgresDB) RecreateAllTables() error {
 		createTagTableSQL,
 		createTaskTagTableSQL,
 		createContributorTableSQL,
+		nullPersonSQL,
 	}
 
 	for _, sql := range sqlStrings {

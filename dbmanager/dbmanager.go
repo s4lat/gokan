@@ -6,6 +6,7 @@ import (
 
 // DBManager - interface for data base managing.
 type DBManager interface {
+	CreateTask(t models.Task) (models.Task, error)
 	CreateBoard(b models.Board) (models.Board, error)
 	CreatePerson(p models.Person) (models.Person, error)
 	GetBoardByID(boardID uint32) (models.Board, error)
