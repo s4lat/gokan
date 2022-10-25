@@ -1,25 +1,25 @@
-package dbmanager
+package db
 
 import (
-	// "errors"
-	// "context"
-	// "github.com/jackc/pgx/v5/pgxpool".
+	// "errors".
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/s4lat/gokan/models"
-	"github.com/s4lat/gokan/postgresdb"
+	// "github.com/s4lat/gokan/postgresdb".
 )
 
-var (
-	DBURL       = "postgres://user:password@localhost:5432/test"
-	postgres, _ = postgresdb.NewPostgresDB(DBURL)
-	dbManager   = DBManager(&postgres)
-)
+var DBURL = "postgres://user:password@localhost:5432/test"
+var db DB
 
 type MockedData struct {
 	Persons []models.Person `json:"persons"`
@@ -42,7 +42,7 @@ func LoadMockData() (MockedData, error) {
 
 func (md *MockedData) CreateMockedPersons() error {
 	for _, person := range md.Persons {
-		_, err := dbManager.CreatePerson(person)
+		_, err := db.Person.Create(person)
 		if err != nil {
 			return fmt.Errorf("CreateMockedPersons -> %w", err)
 		}
@@ -52,7 +52,7 @@ func (md *MockedData) CreateMockedPersons() error {
 
 func (md *MockedData) CreateMockedBoards() error {
 	for _, board := range md.Boards {
-		_, err := dbManager.CreateBoard(board)
+		_, err := db.Board.Create(board)
 		if err != nil {
 			return fmt.Errorf("CreateMockedBoards -> %w", err)
 		}
@@ -61,18 +61,29 @@ func (md *MockedData) CreateMockedBoards() error {
 }
 
 func TestMain(m *testing.M) {
+	dbPool, err := pgxpool.New(context.Background(), DBURL)
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	dbConn := models.DBConn(dbPool)
+	db = DB{
+		Person: models.PersonModel{DB: dbConn},
+		Board:  models.BoardModel{DB: dbConn},
+		System: models.SystemModel{DB: dbConn},
+		Task:   models.TaskModel{DB: dbConn},
+	}
 	m.Run()
 }
 
-func TestRecreateAllTables(t *testing.T) {
-	if err := dbManager.RecreateAllTables(); err != nil {
+func TestSystemRecreateAllTables(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
 	tables := []string{"person", "board", "task", "subtask", "tag", "task_tag", "contributor"}
 	for _, table := range tables {
-		if isExist, err := dbManager.IsTableExist(table); err != nil {
+		if isExist, err := db.System.IsTableExist(table); err != nil {
 			t.Error(err)
 		} else if !isExist {
 			t.Errorf("Table '%s' does not created", table)
@@ -80,18 +91,18 @@ func TestRecreateAllTables(t *testing.T) {
 	}
 }
 
-func TestIsTableExist(t *testing.T) {
-	if err := dbManager.RecreateAllTables(); err != nil {
+func TestSystemIsTableExist(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
-	if isExist, err := dbManager.IsTableExist("kek"); err != nil {
+	if isExist, err := db.System.IsTableExist("kek"); err != nil {
 		t.Error(err)
 	} else if isExist {
 		t.Error("Table 'kek' exist but it's not")
 	}
 
-	if isExist, err := dbManager.IsTableExist("person"); err != nil {
+	if isExist, err := db.System.IsTableExist("person"); err != nil {
 		t.Error(err)
 	} else if !isExist {
 		t.Error("Table 'person' does not exist but it exist")
@@ -99,7 +110,7 @@ func TestIsTableExist(t *testing.T) {
 }
 
 func TestCreatePerson(t *testing.T) {
-	if err := dbManager.RecreateAllTables(); err != nil {
+	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -110,7 +121,7 @@ func TestCreatePerson(t *testing.T) {
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
 	for _, mockedPerson := range mockData.Persons {
-		createdPerson, err := dbManager.CreatePerson(mockedPerson)
+		createdPerson, err := db.Person.Create(mockedPerson)
 		if err != nil {
 			t.Error(err)
 		}
@@ -123,13 +134,13 @@ func TestCreatePerson(t *testing.T) {
 		t.Logf("Created: %v", createdPerson)
 	}
 
-	if _, err := dbManager.CreatePerson(mockData.Persons[0]); err == nil {
-		t.Error("CreatePerson() does't throw error when creating rows with same UNIQUE fields")
+	if _, err := db.Person.Create(mockData.Persons[0]); err == nil {
+		t.Error("Person.Create() does't throw error when creating rows with same UNIQUE fields")
 	}
 }
 
 func TestGetPersonByID(t *testing.T) {
-	if err := dbManager.RecreateAllTables(); err != nil {
+	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -142,13 +153,13 @@ func TestGetPersonByID(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := dbManager.GetPersonByID(3030); err == nil {
+	if _, err := db.Person.GetByID(3030); err == nil {
 		t.Error("Searching for user with non-existent ID not throwing error")
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
 	for _, mockedPerson := range mockData.Persons {
-		obtainedPerson, err := dbManager.GetPersonByID(mockedPerson.ID)
+		obtainedPerson, err := db.Person.GetByID(mockedPerson.ID)
 		if err != nil {
 			t.Error(err)
 		}
@@ -163,7 +174,7 @@ func TestGetPersonByID(t *testing.T) {
 }
 
 func TestGetPersonByEmail(t *testing.T) {
-	if err := dbManager.RecreateAllTables(); err != nil {
+	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -176,13 +187,13 @@ func TestGetPersonByEmail(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := dbManager.GetPersonByEmail("aaa321@mail.ru"); err == nil {
+	if _, err := db.Person.GetByEmail("aaa321@mail.ru"); err == nil {
 		t.Error("Searching for user with non-existent email not throwing error")
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
 	for _, mockedPerson := range mockData.Persons {
-		obtainedPerson, err := dbManager.GetPersonByEmail(mockedPerson.Email)
+		obtainedPerson, err := db.Person.GetByEmail(mockedPerson.Email)
 		if err != nil {
 			t.Error(err)
 		}
@@ -197,7 +208,7 @@ func TestGetPersonByEmail(t *testing.T) {
 }
 
 func TestGetPersonByUsername(t *testing.T) {
-	if err := dbManager.RecreateAllTables(); err != nil {
+	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -210,13 +221,13 @@ func TestGetPersonByUsername(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := dbManager.GetPersonByUsername("akaksda"); err == nil {
+	if _, err := db.Person.GetByUsername("akaksda"); err == nil {
 		t.Error("Searching for user with non-existent username not throwing error")
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
 	for _, mockedPerson := range mockData.Persons {
-		obtainedPerson, err := dbManager.GetPersonByUsername(mockedPerson.Username)
+		obtainedPerson, err := db.Person.GetByUsername(mockedPerson.Username)
 		if err != nil {
 			t.Error(err)
 		}
@@ -231,7 +242,7 @@ func TestGetPersonByUsername(t *testing.T) {
 }
 
 func TestCreateBoard(t *testing.T) {
-	if err := dbManager.RecreateAllTables(); err != nil {
+	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -247,7 +258,7 @@ func TestCreateBoard(t *testing.T) {
 	cmpIgnore := cmpopts.IgnoreFields(models.Board{}, "Contributors", "Tasks", "Tags")
 	for _, board := range mockData.Boards {
 		t.Logf("%v", board)
-		createdBoard, err := dbManager.CreateBoard(board)
+		createdBoard, err := db.Board.Create(board)
 		if err != nil {
 			t.Error(err)
 		}
@@ -261,13 +272,13 @@ func TestCreateBoard(t *testing.T) {
 	}
 
 	badBoard := models.Board{Name: "badBoard", OwnerID: 1337}
-	if _, err := dbManager.CreateBoard(badBoard); err == nil {
-		t.Error("CreateBoard() does't throw error when creating rows with non-existent owner_id")
+	if _, err := db.Board.Create(badBoard); err == nil {
+		t.Error("BoardModel.Create() does't throw error when creating rows with non-existent owner_id")
 	}
 }
 
 func TestGetBoardByID(t *testing.T) {
-	if err := dbManager.RecreateAllTables(); err != nil {
+	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 	mockData, err := LoadMockData()
@@ -281,13 +292,13 @@ func TestGetBoardByID(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := dbManager.GetBoardByID(1337); err == nil {
+	if _, err := db.Board.GetByID(1337); err == nil {
 		t.Error("Searching for board with non-existent boardID not throwing error")
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Board{}, "Contributors", "Tasks", "Tags")
 	for _, mockedBoard := range mockData.Boards {
-		obtainedBoard, err := dbManager.GetBoardByID(mockedBoard.ID)
+		obtainedBoard, err := db.Board.GetByID(mockedBoard.ID)
 		if err != nil {
 			t.Error(err)
 		}
@@ -302,7 +313,7 @@ func TestGetBoardByID(t *testing.T) {
 }
 
 func TestCreateTask(t *testing.T) {
-	if err := dbManager.RecreateAllTables(); err != nil {
+	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 	mockData, err := LoadMockData()
@@ -318,7 +329,7 @@ func TestCreateTask(t *testing.T) {
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "Subtasks", "Tags")
 	for _, mockedTask := range mockData.Tasks {
-		createdTask, err := dbManager.CreateTask(mockedTask)
+		createdTask, err := db.Task.Create(mockedTask)
 		if err != nil {
 			t.Error(err)
 		}
