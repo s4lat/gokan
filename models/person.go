@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// Person - person model struct.
 type Person struct {
 	Username      string  `json:"username"`
 	FirstName     string  `json:"first_name"`
@@ -16,6 +17,7 @@ type Person struct {
 	ID            uint32  `json:"person_id"`
 }
 
+// PersonModel - struct that implements PersonManager interface for interacting with person table in db.
 type PersonModel struct {
 	DB DBConn
 }

@@ -5,15 +5,17 @@ import (
 	"fmt"
 )
 
+// Board - board model struct.
 type Board struct {
 	Name         string   `json:"board_name"`
 	Contributors []Person // LoadBoardContributors() by person_id from contributor table
-	Tasks        []Task   // LoadBoardTasksfrom board_id in task table
-	Tags         []Tag    // from board_id in tag table
+	Tasks        []Task   // LoadBoardTasks from board_id in task table
+	Tags         []Tag    // LoadBoardTags from board_id in tag table
 	ID           uint32   `json:"board_id"`
 	OwnerID      uint32   `json:"owner_id"`
 }
 
+// BoardModel - struct that implements BoardManager interface for interacting with board table in db.
 type BoardModel struct {
 	DB DBConn
 }

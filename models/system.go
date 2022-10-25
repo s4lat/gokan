@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// SystemModel - struct that implements SystemManager interface for interacting with database structure.
 type SystemModel struct {
 	DB DBConn
 }
