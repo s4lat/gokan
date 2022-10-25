@@ -21,14 +21,14 @@ type Board struct {
 }
 
 type Task struct {
-	Name        string
-	Description string
+	Name        string    `json:"task_name"`
+	Description string    `json:"task_description"`
 	Subtasks    []Subtask // LoadTaskSubtasks(), from parent_task_id in subtask table
 	Tags        []Tag     // always load, from task_tag table
-	ID          uint32
-	BoardID     uint32
-	Author      uint32
-	ExecutorID  uint32
+	ID          uint32    `json:"task_id"`
+	BoardID     uint32    `json:"board_id"`
+	AuthorID    uint32    `json:"author_id"`
+	ExecutorID  uint32    `json:"executor_id"`
 }
 
 type Subtask struct {

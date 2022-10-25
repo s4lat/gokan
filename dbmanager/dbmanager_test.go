@@ -24,6 +24,7 @@ var (
 type MockedData struct {
 	Persons []models.Person `json:"persons"`
 	Boards  []models.Board  `json:"boards"`
+	Tasks   []models.Task   `json:"tasks"`
 }
 
 func LoadMockData() (MockedData, error) {
@@ -269,16 +270,13 @@ func TestGetBoardByID(t *testing.T) {
 	if err := dbManager.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
-
 	mockData, err := LoadMockData()
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	if err := mockData.CreateMockedPersons(); err != nil {
 		t.Fatal(err)
 	}
-
 	if err := mockData.CreateMockedBoards(); err != nil {
 		t.Fatal(err)
 	}
@@ -300,5 +298,36 @@ func TestGetBoardByID(t *testing.T) {
 		}
 
 		t.Logf("Obtained: %v", obtainedBoard)
+	}
+}
+
+func TestCreateTask(t *testing.T) {
+	if err := dbManager.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+	mockData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mockData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+
+	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "Subtasks", "Tags")
+	for _, mockedTask := range mockData.Tasks {
+		createdTask, err := dbManager.CreateTask(mockedTask)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !cmp.Equal(createdTask, mockedTask, cmpIgnore) {
+			t.Errorf("Created task not equal to mocked: \n\t%v \n\t%v",
+				createdTask, mockedTask)
+		}
+
+		t.Logf("Created: %v", createdTask)
 	}
 }
