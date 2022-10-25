@@ -26,6 +26,22 @@ func NewPostgresDB(dbURL string) (PostgresDB, error) {
 	return PostgresDB{dbPool}, nil
 }
 
+func (pdb *PostgresDB) GetBoardByID(boardID uint32) (models.Board, error) {
+	sql := "SELECT * FROM board WHERE board_id = $1;"
+
+	var obtainedBoard models.Board
+	err := pdb.QueryRow(context.Background(), sql, boardID).Scan(
+		&obtainedBoard.ID,
+		&obtainedBoard.Name,
+		&obtainedBoard.OwnerID,
+	)
+
+	if err != nil {
+		return models.Board{}, fmt.Errorf("GetBoardByID() -> %w", err)
+	}
+	return obtainedBoard, nil
+}
+
 // GetPersonByUsername - searching for person in DB by username, returning finded Person.
 func (pdb *PostgresDB) GetPersonByUsername(username string) (models.Person, error) {
 	sql := "SELECT * FROM person WHERE username = $1;"
@@ -44,28 +60,6 @@ func (pdb *PostgresDB) GetPersonByUsername(username string) (models.Person, erro
 		return models.Person{}, fmt.Errorf("GetPersonByUsername() -> %w", err)
 	}
 	return obtainedPerson, nil
-}
-
-// CreateBoard - Creates new row in table 'board' with values from `b` fields,
-// Returning created Board.
-func (pdb *PostgresDB) CreateBoard(b models.Board) (models.Board, error) {
-	sql := "INSERT INTO board (board_name, owner_id) VALUES ($1, $2) RETURNING *;"
-
-	var createdBoard models.Board
-	err := pdb.QueryRow(context.Background(), sql,
-		b.Name,
-		b.OwnerID,
-	).Scan(
-		&createdBoard.ID,
-		&createdBoard.Name,
-		&createdBoard.OwnerID,
-	)
-
-	if err != nil {
-		return models.Board{}, fmt.Errorf("CreateBoard() -> %w", err)
-	}
-
-	return createdBoard, nil
 }
 
 // GetPersonByEmail - searching for person in DB by email, returning finded Person.
@@ -137,6 +131,28 @@ func (pdb *PostgresDB) CreatePerson(p models.Person) (models.Person, error) {
 	}
 
 	return createdPerson, nil
+}
+
+// CreateBoard - Creates new row in table 'board' with values from `b` fields,
+// Returning created Board.
+func (pdb *PostgresDB) CreateBoard(b models.Board) (models.Board, error) {
+	sql := "INSERT INTO board (board_name, owner_id) VALUES ($1, $2) RETURNING *;"
+
+	var createdBoard models.Board
+	err := pdb.QueryRow(context.Background(), sql,
+		b.Name,
+		b.OwnerID,
+	).Scan(
+		&createdBoard.ID,
+		&createdBoard.Name,
+		&createdBoard.OwnerID,
+	)
+
+	if err != nil {
+		return models.Board{}, fmt.Errorf("CreateBoard() -> %w", err)
+	}
+
+	return createdBoard, nil
 }
 
 // RecreateAllTables - drops previously created table and creates tables required by the GoKan.

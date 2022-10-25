@@ -8,6 +8,7 @@ import (
 type DBManager interface {
 	CreateBoard(b models.Board) (models.Board, error)
 	CreatePerson(p models.Person) (models.Person, error)
+	GetBoardByID(boardID uint32) (models.Board, error)
 	GetPersonByID(personID uint32) (models.Person, error)
 	GetPersonByEmail(email string) (models.Person, error)
 	GetPersonByUsername(username string) (models.Person, error)
