@@ -1,5 +1,6 @@
 package models
 
+// Tag - tag model struct.
 type Tag struct {
 	Name        string
 	Description string

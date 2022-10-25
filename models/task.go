@@ -5,10 +5,11 @@ import (
 	"fmt"
 )
 
+// Task - task model struct.
 type Task struct {
 	Name        string    `json:"task_name"`
 	Description string    `json:"task_description"`
-	Subtasks    []Subtask // LoadTaskSubtasks(), from parent_task_id in subtask table
+	Subtasks    []Subtask // always load, from parent_task_id in subtask table
 	Tags        []Tag     // always load, from task_tag table
 	ID          uint32    `json:"task_id"`
 	BoardID     uint32    `json:"board_id"`
@@ -16,6 +17,7 @@ type Task struct {
 	ExecutorID  uint32    `json:"executor_id"`
 }
 
+// TaskModel - struct that implements TaskManager interface for interacting with task table in db.
 type TaskModel struct {
 	DB DBConn
 }

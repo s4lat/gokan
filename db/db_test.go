@@ -1,7 +1,6 @@
 package db
 
 import (
-	// "errors".
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,7 +14,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/s4lat/gokan/models"
-	// "github.com/s4lat/gokan/postgresdb".
 )
 
 var DBURL = "postgres://user:password@localhost:5432/test"
