@@ -22,7 +22,7 @@ type PersonModel struct {
 	DB DBConn
 }
 
-// Create - Creates new row in table 'person'.
+// CreatePerson - Creates new row in table 'person' with values from `p` fields,
 // Returning created Person.
 func (pm PersonModel) Create(person Person) (Person, error) {
 	sql := ("INSERT INTO " +
