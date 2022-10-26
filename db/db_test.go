@@ -86,13 +86,7 @@ func TestMain(m *testing.M) {
 	}
 
 	dbConn := models.DBConn(dbPool)
-	db = DB{
-		System: models.SystemModel{DB: dbConn},
-		Person: models.PersonModel{DB: dbConn},
-		Board:  models.BoardModel{DB: dbConn},
-		Task:   models.TaskModel{DB: dbConn},
-		Tag:    models.TagModel{DB: dbConn},
-	}
+	db = NewDB(dbConn)
 	m.Run()
 }
 

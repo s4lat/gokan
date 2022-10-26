@@ -13,6 +13,17 @@ type DB struct {
 	Tag    TagManager
 }
 
+// NewDB - returning new initilized DB.
+func NewDB(dbConn models.DBConn) DB {
+	return DB{
+		System: models.SystemModel{DB: dbConn},
+		Person: models.PersonModel{DB: dbConn},
+		Board:  models.BoardModel{DB: dbConn},
+		Task:   models.TaskModel{DB: dbConn},
+		Tag:    models.TagModel{DB: dbConn},
+	}
+}
+
 // SystemManager - interface for interacting with db structure.
 type SystemManager interface {
 	RecreateAllTables() error
