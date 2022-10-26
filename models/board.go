@@ -39,13 +39,13 @@ func (bm BoardModel) GetByID(boardID uint32) (Board, error) {
 
 // Create - Creates new row in table 'board' with values from `b` fields,
 // Returning created Board.
-func (bm BoardModel) Create(b Board) (Board, error) {
+func (bm BoardModel) Create(board Board) (Board, error) {
 	sql := "INSERT INTO board (board_name, owner_id) VALUES ($1, $2) RETURNING *;"
 
 	var createdBoard Board
 	err := bm.DB.QueryRow(context.Background(), sql,
-		b.Name,
-		b.OwnerID,
+		board.Name,
+		board.OwnerID,
 	).Scan(
 		&createdBoard.ID,
 		&createdBoard.Name,
