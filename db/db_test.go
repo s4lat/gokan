@@ -31,11 +31,11 @@ func LoadMockData() (MockedData, error) {
 		return MockedData{}, fmt.Errorf("LoadMockData -> %w", err)
 	}
 
-	var mockData MockedData
-	if err := json.Unmarshal(jsonData, &mockData); err != nil {
+	var mockedData MockedData
+	if err := json.Unmarshal(jsonData, &mockedData); err != nil {
 		return MockedData{}, fmt.Errorf("LoadMockData -> %w", err)
 	}
-	return mockData, nil
+	return mockedData, nil
 }
 
 func (md *MockedData) CreateMockedPersons() error {
@@ -53,6 +53,16 @@ func (md *MockedData) CreateMockedBoards() error {
 		_, err := db.Board.Create(board)
 		if err != nil {
 			return fmt.Errorf("CreateMockedBoards -> %w", err)
+		}
+	}
+	return nil
+}
+
+func (md *MockedData) CreateMockedTasks() error {
+	for _, task := range md.Tasks {
+		_, err := db.Task.Create(task)
+		if err != nil {
+			return fmt.Errorf("CreateMockedTasks -> %w", err)
 		}
 	}
 	return nil
@@ -107,18 +117,18 @@ func TestSystemIsTableExist(t *testing.T) {
 	}
 }
 
-func TestCreatePerson(t *testing.T) {
+func TestPersonCreate(t *testing.T) {
 	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
-	mockData, err := LoadMockData()
+	mockedData, err := LoadMockData()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
-	for _, mockedPerson := range mockData.Persons {
+	for _, mockedPerson := range mockedData.Persons {
 		createdPerson, err := db.Person.Create(mockedPerson)
 		if err != nil {
 			t.Error(err)
@@ -132,22 +142,22 @@ func TestCreatePerson(t *testing.T) {
 		t.Logf("Created: %v", createdPerson)
 	}
 
-	if _, err := db.Person.Create(mockData.Persons[0]); err == nil {
+	if _, err := db.Person.Create(mockedData.Persons[0]); err == nil {
 		t.Error("Person.Create() does't throw error when creating rows with same UNIQUE fields")
 	}
 }
 
-func TestGetPersonByID(t *testing.T) {
+func TestPersonGetByID(t *testing.T) {
 	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
-	mockData, err := LoadMockData()
+	mockedData, err := LoadMockData()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := mockData.CreateMockedPersons(); err != nil {
+	if err := mockedData.CreateMockedPersons(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -156,7 +166,7 @@ func TestGetPersonByID(t *testing.T) {
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
-	for _, mockedPerson := range mockData.Persons {
+	for _, mockedPerson := range mockedData.Persons {
 		obtainedPerson, err := db.Person.GetByID(mockedPerson.ID)
 		if err != nil {
 			t.Error(err)
@@ -171,17 +181,17 @@ func TestGetPersonByID(t *testing.T) {
 	}
 }
 
-func TestGetPersonByEmail(t *testing.T) {
+func TestPersonGetByEmail(t *testing.T) {
 	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
-	mockData, err := LoadMockData()
+	mockedData, err := LoadMockData()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := mockData.CreateMockedPersons(); err != nil {
+	if err := mockedData.CreateMockedPersons(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -190,7 +200,7 @@ func TestGetPersonByEmail(t *testing.T) {
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
-	for _, mockedPerson := range mockData.Persons {
+	for _, mockedPerson := range mockedData.Persons {
 		obtainedPerson, err := db.Person.GetByEmail(mockedPerson.Email)
 		if err != nil {
 			t.Error(err)
@@ -205,17 +215,17 @@ func TestGetPersonByEmail(t *testing.T) {
 	}
 }
 
-func TestGetPersonByUsername(t *testing.T) {
+func TestPersonGetByUsername(t *testing.T) {
 	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
-	mockData, err := LoadMockData()
+	mockedData, err := LoadMockData()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := mockData.CreateMockedPersons(); err != nil {
+	if err := mockedData.CreateMockedPersons(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -224,7 +234,7 @@ func TestGetPersonByUsername(t *testing.T) {
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
-	for _, mockedPerson := range mockData.Persons {
+	for _, mockedPerson := range mockedData.Persons {
 		obtainedPerson, err := db.Person.GetByUsername(mockedPerson.Username)
 		if err != nil {
 			t.Error(err)
@@ -239,22 +249,22 @@ func TestGetPersonByUsername(t *testing.T) {
 	}
 }
 
-func TestCreateBoard(t *testing.T) {
+func TestBoardCreate(t *testing.T) {
 	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
 
-	mockData, err := LoadMockData()
+	mockedData, err := LoadMockData()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := mockData.CreateMockedPersons(); err != nil {
+	if err := mockedData.CreateMockedPersons(); err != nil {
 		t.Fatal(err)
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Board{}, "Contributors", "Tasks", "Tags")
-	for _, board := range mockData.Boards {
+	for _, board := range mockedData.Boards {
 		t.Logf("%v", board)
 		createdBoard, err := db.Board.Create(board)
 		if err != nil {
@@ -275,18 +285,18 @@ func TestCreateBoard(t *testing.T) {
 	}
 }
 
-func TestGetBoardByID(t *testing.T) {
+func BoardGetByID(t *testing.T) {
 	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
-	mockData, err := LoadMockData()
+	mockedData, err := LoadMockData()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := mockData.CreateMockedPersons(); err != nil {
+	if err := mockedData.CreateMockedPersons(); err != nil {
 		t.Fatal(err)
 	}
-	if err := mockData.CreateMockedBoards(); err != nil {
+	if err := mockedData.CreateMockedBoards(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -295,7 +305,7 @@ func TestGetBoardByID(t *testing.T) {
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Board{}, "Contributors", "Tasks", "Tags")
-	for _, mockedBoard := range mockData.Boards {
+	for _, mockedBoard := range mockedData.Boards {
 		obtainedBoard, err := db.Board.GetByID(mockedBoard.ID)
 		if err != nil {
 			t.Error(err)
@@ -310,23 +320,23 @@ func TestGetBoardByID(t *testing.T) {
 	}
 }
 
-func TestCreateTask(t *testing.T) {
+func TestTaskCreate(t *testing.T) {
 	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}
-	mockData, err := LoadMockData()
+	mockedData, err := LoadMockData()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := mockData.CreateMockedPersons(); err != nil {
+	if err := mockedData.CreateMockedPersons(); err != nil {
 		t.Fatal(err)
 	}
-	if err := mockData.CreateMockedBoards(); err != nil {
+	if err := mockedData.CreateMockedBoards(); err != nil {
 		t.Fatal(err)
 	}
 
 	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "Subtasks", "Tags")
-	for _, mockedTask := range mockData.Tasks {
+	for _, mockedTask := range mockedData.Tasks {
 		createdTask, err := db.Task.Create(mockedTask)
 		if err != nil {
 			t.Error(err)
@@ -338,5 +348,42 @@ func TestCreateTask(t *testing.T) {
 		}
 
 		t.Logf("Created: %v", createdTask)
+	}
+}
+
+func TestTaskGetByID(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedTasks(); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := db.Task.GetByID(1337); err == nil {
+		t.Error("Searching for task with non-existent taskID not throwing error")
+	}
+
+	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "Subtasks", "Tags")
+	for _, mockedTask := range mockedData.Tasks {
+		obtainedTask, err := db.Task.GetByID(mockedTask.ID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !cmp.Equal(obtainedTask, mockedTask, cmpIgnore) {
+			t.Errorf("Obtained task not equal to mocked: \n\t%v \n\t%v",
+				obtainedTask, mockedTask)
+		}
+		t.Logf("Obtained: %v", obtainedTask)
 	}
 }
