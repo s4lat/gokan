@@ -53,16 +53,19 @@
   "tags": [
     {
       "board_id": 2,
+      "tag_id": 1,
       "tag_name": "solved"
     },
     {
       "board_id": 3,
       "tag_description": "waits for it's time",
+      "tag_id": 2,
       "tag_name": "pending"
     },
     {
       "board_id": 1,
       "tag_description": "has executor",
+      "tag_id": 3,
       "tag_name": "assigned"
     }
   ],
