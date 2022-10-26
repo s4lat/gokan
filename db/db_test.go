@@ -1,3 +1,5 @@
+//nolint:gocognit
+
 package db
 
 import (
@@ -24,6 +26,10 @@ type MockedData struct {
 	Boards  []models.Board  `json:"boards"`
 	Tasks   []models.Task   `json:"tasks"`
 	Tags    []models.Tag    `json:"tags"`
+	TaskTag []struct {
+		TaskID uint32 `json:"task_id"`
+		TagID  uint32 `json:"tag_id"`
+	} `json:"task_tag"`
 }
 
 func LoadMockData() (MockedData, error) {
@@ -464,5 +470,53 @@ func TestTagGetByID(t *testing.T) {
 				obtainedTag, mockedTag)
 		}
 		t.Logf("Obtained: %v", obtainedTag)
+	}
+}
+
+func TestTaskAddTagToTask(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedTasks(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedTags(); err != nil {
+		t.Fatal(err)
+	}
+
+OuterFor:
+	for _, taskTag := range mockedData.TaskTag {
+		task, err := db.Task.GetByID(taskTag.TaskID)
+		if err != nil {
+			t.Error(err)
+		}
+		tag, err := db.Tag.GetByID(taskTag.TagID)
+		if err != nil {
+			t.Error(err)
+		}
+		task, err = db.Task.AddTagToTask(tag, task)
+		if err != nil {
+			t.Error(err)
+		}
+
+		fmt.Print("kek")
+
+		for _, tag := range task.Tags {
+			if tag.ID == taskTag.TagID {
+				t.Logf("Task[%d]. %v", task.ID, task.Tags)
+				continue OuterFor
+			}
+		}
+		t.Errorf("Tag not added to task.Tags: \n\t%v\n\t%v", tag, task.Tags)
 	}
 }
