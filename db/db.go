@@ -39,6 +39,7 @@ type TaskManager interface {
 	GetByID(taskID uint32) (models.Task, error)
 }
 
+// TagManager - interface for interacting with tag table in db.
 type TagManager interface {
 	Create(tag models.Tag) (models.Tag, error)
 }
