@@ -69,5 +69,54 @@ func (tm TaskModel) GetByID(taskID uint32) (Task, error) {
 	if err != nil {
 		return Task{}, fmt.Errorf("PersonModel.GetByID() -> %w", err)
 	}
+
+	obtainedTask, err = tm.loadTags(obtainedTask)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.AddTagToTask() -> %w", err)
+	}
+
 	return obtainedTask, nil
+}
+
+// AddTagToTask - add tag to task in task_tag table.
+func (tm TaskModel) AddTagToTask(tag Tag, task Task) (Task, error) {
+	sql := "insert into task_tag (ref_tag_id, ref_task_id) values ($1, $2);"
+	_, err := tm.DB.Exec(context.Background(), sql, tag.ID, task.ID)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.AddTagToTask() -> %w", err)
+	}
+
+	task, err = tm.loadTags(task)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.AddTagToTask() -> %w", err)
+	}
+	return task, nil
+}
+
+// loadTags - loading tags in Task.Tags slice.
+func (tm TaskModel) loadTags(task Task) (Task, error) {
+	sql := ("SELECT tag.* FROM task " +
+		"JOIN task_tag ON task_id = ref_task_id " +
+		"JOIN tag ON tag_id = ref_tag_id " +
+		"WHERE task_id = $1")
+
+	rows, _ := tm.DB.Query(context.Background(), sql, task.ID)
+	defer rows.Close()
+
+	var tags []Tag
+	for rows.Next() {
+		var tag Tag
+		err := rows.Scan(&tag.ID, &tag.Name, &tag.Description, &tag.BoardID)
+		if err != nil {
+			return Task{}, fmt.Errorf("TaskModel.loadTags -> %w", err)
+		}
+		tags = append(tags, tag)
+	}
+
+	if err := rows.Err(); err != nil {
+		return Task{}, fmt.Errorf("TaskModel.loadTags -> %w", err)
+	}
+
+	task.Tags = tags
+	return task, nil
 }

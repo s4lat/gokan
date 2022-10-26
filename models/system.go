@@ -62,9 +62,9 @@ func (sm SystemModel) RecreateAllTables() error {
 
 		createTaskTagTableSQL = ("" +
 			"CREATE TABLE task_tag (" +
-			"task_id INTEGER REFERENCES task (task_id) ON DELETE CASCADE," +
-			"tag_id INTEGER REFERENCES tag (tag_id) ON DELETE CASCADE," +
-			"CONSTRAINT task_tag_pkey PRIMARY KEY (task_id, tag_id)" +
+			"ref_task_id INTEGER REFERENCES task (task_id) ON DELETE CASCADE," +
+			"ref_tag_id INTEGER REFERENCES tag (tag_id) ON DELETE CASCADE," +
+			"CONSTRAINT task_tag_pkey PRIMARY KEY (ref_task_id, ref_tag_id)" +
 			");")
 
 		createContributorTableSQL = ("" +

@@ -69,6 +69,28 @@
       "tag_name": "assigned"
     }
   ],
+  "task_tag": [
+    {
+      "tag_id": 2,
+      "task_id": 1
+    },
+    {
+      "tag_id": 1,
+      "task_id": 1
+    },
+    {
+      "tag_id": 2,
+      "task_id": 2
+    },
+    {
+      "tag_id": 3,
+      "task_id": 1
+    },
+    {
+      "tag_id": 1,
+      "task_id": 3
+    }
+  ],
   "tasks": [
     {
       "author_id": 1,
@@ -87,25 +109,18 @@
       "task_name": "SOmethign dodod"
     },
     {
-      "author_id": 3,
-      "board_id": 3,
-      "task_description": "Nothing to do",
-      "task_id": 3,
-      "task_name": "Other thing"
-    },
-    {
       "author_id": 4,
       "board_id": 2,
       "executor_id": 4,
       "task_description": "babob bi",
-      "task_id": 4,
+      "task_id": 3,
       "task_name": "Bibabbo"
     },
     {
       "author_id": 3,
       "board_id": 1,
       "task_description": "Another one",
-      "task_id": 5,
+      "task_id": 4,
       "task_name": "Besides mosides"
     }
   ]

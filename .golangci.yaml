@@ -40,10 +40,11 @@ issues:
 
 linters-settings:
   gocyclo:
-    min-complexity: 15
+    min-complexity: 20
 
   gocognit:
-    min-complexity: 15
+    min-complexity: 20
+
 
   godot:
     exclude:
