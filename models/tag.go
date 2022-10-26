@@ -13,13 +13,10 @@ type Tag struct {
 	BoardID     uint32 `json:"board_id"`
 }
 
-// TagModel - struct that implements TagManager interface for interacting with tag table in db.
 type TagModel struct {
 	DB DBConn
 }
 
-// Create - Creates new row in table 'tag'.
-// Returning created Person.
 func (tm TagModel) Create(tag Tag) (Tag, error) {
 	sql := ("INSERT INTO " +
 		"tag (tag_name, tag_description, board_id) " +
