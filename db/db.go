@@ -23,6 +23,7 @@ type PersonManager interface {
 // TaskManager - interface for interacting with task table in db.
 type TaskManager interface {
 	Create(t models.Task) (models.Task, error)
+	GetByID(taskID uint32) (models.Task, error)
 }
 
 // BoardManager - interface for interacting with board table in db.

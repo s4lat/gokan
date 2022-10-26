@@ -51,3 +51,23 @@ func (tm TaskModel) Create(t Task) (Task, error) {
 
 	return createdTask, nil
 }
+
+// GetByID - searching for task with task_id=TaskID, returning Task.
+func (tm TaskModel) GetByID(taskID uint32) (Task, error) {
+	sql := "SELECT * FROM task WHERE task_id = $1;"
+
+	var obtainedTask Task
+	err := tm.DB.QueryRow(context.Background(), sql, taskID).Scan(
+		&obtainedTask.ID,
+		&obtainedTask.Name,
+		&obtainedTask.Description,
+		&obtainedTask.BoardID,
+		&obtainedTask.AuthorID,
+		&obtainedTask.ExecutorID,
+	)
+
+	if err != nil {
+		return Task{}, fmt.Errorf("PersonModel.GetByID() -> %w", err)
+	}
+	return obtainedTask, nil
+}
