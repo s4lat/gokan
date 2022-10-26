@@ -24,7 +24,7 @@ type PersonModel struct {
 
 // CreatePerson - Creates new row in table 'person' with values from `p` fields,
 // Returning created Person.
-func (pm PersonModel) Create(p Person) (Person, error) {
+func (pm PersonModel) Create(person Person) (Person, error) {
 	sql := ("INSERT INTO " +
 		"person (username, first_name, last_name, email, password_hash) " +
 		"VALUES ($1, $2, $3, $4, $5)" +
@@ -32,11 +32,11 @@ func (pm PersonModel) Create(p Person) (Person, error) {
 
 	var createdPerson Person
 	err := pm.DB.QueryRow(context.Background(), sql,
-		p.Username,
-		p.FirstName,
-		p.LastName,
-		p.Email,
-		p.PasswordHash,
+		person.Username,
+		person.FirstName,
+		person.LastName,
+		person.Email,
+		person.PasswordHash,
 	).Scan(
 		&createdPerson.ID,
 		&createdPerson.Username,

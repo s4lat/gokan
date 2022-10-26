@@ -56,7 +56,7 @@ func (sm SystemModel) RecreateAllTables() error {
 			"CREATE TABLE tag (" +
 			"tag_id serial PRIMARY KEY," +
 			"tag_name VARCHAR NOT NULL," +
-			"description VARCHAR NOT NULL," +
+			"tag_description VARCHAR NOT NULL," +
 			"board_id INTEGER REFERENCES board (board_id) ON DELETE CASCADE" +
 			");")
 

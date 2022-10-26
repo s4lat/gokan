@@ -23,6 +23,7 @@ type MockedData struct {
 	Persons []models.Person `json:"persons"`
 	Boards  []models.Board  `json:"boards"`
 	Tasks   []models.Task   `json:"tasks"`
+	Tags    []models.Tag    `json:"tags"`
 }
 
 func LoadMockData() (MockedData, error) {
@@ -76,10 +77,11 @@ func TestMain(m *testing.M) {
 
 	dbConn := models.DBConn(dbPool)
 	db = DB{
+		System: models.SystemModel{DB: dbConn},
 		Person: models.PersonModel{DB: dbConn},
 		Board:  models.BoardModel{DB: dbConn},
-		System: models.SystemModel{DB: dbConn},
 		Task:   models.TaskModel{DB: dbConn},
+		Tag:    models.TagModel{DB: dbConn},
 	}
 	m.Run()
 }
@@ -385,5 +387,38 @@ func TestTaskGetByID(t *testing.T) {
 				obtainedTask, mockedTask)
 		}
 		t.Logf("Obtained: %v", obtainedTask)
+	}
+}
+
+func TestTagCreate(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedTasks(); err != nil {
+		t.Fatal(err)
+	}
+
+	cmpIgnore := cmpopts.IgnoreFields(models.Tag{}, "ID")
+	for _, mockedTag := range mockedData.Tags {
+		createdTag, err := db.Tag.Create(mockedTag)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !cmp.Equal(mockedTag, createdTag, cmpIgnore) {
+			t.Errorf("Created tag not equal to mocked: \n\t%v \n\t%v",
+				createdTag, mockedTag)
+		}
+		t.Logf("Created: %v", createdTag)
 	}
 }

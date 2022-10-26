@@ -50,6 +50,22 @@
       "username": "GalaxyShad"
     }
   ],
+  "tags": [
+    {
+      "board_id": 2,
+      "tag_name": "solved"
+    },
+    {
+      "board_id": 3,
+      "tag_description": "waits for it's time",
+      "tag_name": "pending"
+    },
+    {
+      "board_id": 1,
+      "tag_description": "has executor",
+      "tag_name": "assigned"
+    }
+  ],
   "tasks": [
     {
       "author_id": 1,
