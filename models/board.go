@@ -37,7 +37,7 @@ func (bm BoardModel) GetByID(boardID uint32) (Board, error) {
 	return obtainedBoard, nil
 }
 
-// Create - Creates new row in table 'board' with values from `b` fields,
+// Create - Creates new row in table 'board'.
 // Returning created Board.
 func (bm BoardModel) Create(board Board) (Board, error) {
 	sql := "INSERT INTO board (board_name, owner_id) VALUES ($1, $2) RETURNING *;"

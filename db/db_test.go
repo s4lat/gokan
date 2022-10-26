@@ -69,6 +69,16 @@ func (md *MockedData) CreateMockedTasks() error {
 	return nil
 }
 
+func (md *MockedData) CreateMockedTags() error {
+	for _, tag := range md.Tags {
+		_, err := db.Tag.Create(tag)
+		if err != nil {
+			return fmt.Errorf("CreateMockedTags -> %w", err)
+		}
+	}
+	return nil
+}
+
 func TestMain(m *testing.M) {
 	dbPool, err := pgxpool.New(context.Background(), DBURL)
 	if err != nil {
