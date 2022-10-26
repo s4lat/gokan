@@ -69,6 +69,16 @@ func (md *MockedData) CreateMockedTasks() error {
 	return nil
 }
 
+func (md *MockedData) CreateMockedTags() error {
+	for _, tag := range md.Tags {
+		_, err := db.Tag.Create(tag)
+		if err != nil {
+			return fmt.Errorf("CreateMockedTags -> %w", err)
+		}
+	}
+	return nil
+}
+
 func TestMain(m *testing.M) {
 	dbPool, err := pgxpool.New(context.Background(), DBURL)
 	if err != nil {
@@ -420,5 +430,45 @@ func TestTagCreate(t *testing.T) {
 				createdTag, mockedTag)
 		}
 		t.Logf("Created: %v", createdTag)
+	}
+}
+
+func TestTagGetByID(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedTasks(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedTags(); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := db.Tag.GetByID(1337); err == nil {
+		t.Error("Searching for tag with non-existent tagID not throwing error")
+	}
+
+	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "ID")
+	for _, mockedTag := range mockedData.Tags {
+		obtainedTag, err := db.Tag.GetByID(mockedTag.ID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !cmp.Equal(obtainedTag, mockedTag, cmpIgnore) {
+			t.Errorf("Obtained task not equal to mocked: \n\t%v \n\t%v",
+				obtainedTag, mockedTag)
+		}
+		t.Logf("Obtained: %v", obtainedTag)
 	}
 }

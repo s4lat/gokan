@@ -30,9 +30,13 @@ linters:
     - goconst
     - gocognit
     - decorder
+    - revive
 
 issues:
   fix: true
+  exclude-use-default: false
+  exclude:
+    - "ST1000: at least one file in a package should have a package comment"
 
 linters-settings:
   gocyclo:
@@ -50,6 +54,12 @@ linters-settings:
 
   lll:
     tab-width: 4
+
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - disableStutteringCheck
 
   govet:
     check-shadowing: true
