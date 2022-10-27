@@ -7,15 +7,27 @@ import (
 
 // Task - task model struct.
 type Task struct {
-	Name        string    `json:"task_name"`
-	Description string    `json:"task_description"`
-	Subtasks    []Subtask // always load, from parent_task_id in subtask table
-	Tags        []Tag     // always load, from task_tag table
-	ID          uint32    `json:"task_id"`
-	BoardID     uint32    `json:"board_id"`
-	AuthorID    uint32    `json:"author_id"`
-	ExecutorID  uint32    `json:"executor_id"`
+	Assignees   []TaskAssignee
+	Author      TaskAuthor `json:"author"`
+	Name        string     `json:"task_name"`
+	Description string     `json:"task_description"`
+	Subtasks    []Subtask  // always load, from parent_task_id in subtask table
+	Tags        []Tag      // always load, from task_tag table
+	ID          uint32     `json:"task_id"`
+	BoardID     uint32     `json:"board_id"`
 }
+
+// TaskAuthor - struct that represents task author.
+type TaskAuthor struct {
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	ID        uint32 `json:"person_id"`
+}
+
+// TaskAssignee - other name for TaskAuthor struct, used for representing task executor in Task Struct.
+type TaskAssignee TaskAuthor
 
 // TaskModel - struct that implements TaskManager interface for interacting with task table in db.
 type TaskModel struct {
@@ -25,24 +37,29 @@ type TaskModel struct {
 // Create - Creates new row in table 'task' with values from `t` fields,
 // Returning created Task.
 func (tm TaskModel) Create(t Task) (Task, error) {
-	sql := ("INSERT INTO task " +
-		"(task_name, task_description, board_id, author_id, executor_id) " +
-		"VALUES ($1, $2, $3, $4, $5) RETURNING *;")
+	sql := ("WITH inserted_task AS (" +
+		"INSERT INTO task " +
+		"(task_name, task_description, board_id, author_id) " +
+		"VALUES ($1, $2, $3, $4) RETURNING *) " +
+		"SELECT inserted_task.*, username, first_name, last_name, email " +
+		"FROM inserted_task JOIN person ON person_id = author_id;")
 
 	var createdTask Task
 	err := tm.DB.QueryRow(context.Background(), sql,
 		t.Name,
 		t.Description,
 		t.BoardID,
-		t.AuthorID,
-		t.ExecutorID,
+		t.Author.ID,
 	).Scan(
 		&createdTask.ID,
 		&createdTask.Name,
 		&createdTask.Description,
 		&createdTask.BoardID,
-		&createdTask.AuthorID,
-		&createdTask.ExecutorID,
+		&createdTask.Author.ID,
+		&createdTask.Author.Username,
+		&createdTask.Author.FirstName,
+		&createdTask.Author.LastName,
+		&createdTask.Author.Email,
 	)
 
 	if err != nil {
@@ -52,9 +69,13 @@ func (tm TaskModel) Create(t Task) (Task, error) {
 	return createdTask, nil
 }
 
-// GetByID - searching for task with task_id=TaskID, returning Task.
+// GetByID - searching for task with task_id=taskID, returning Task.
 func (tm TaskModel) GetByID(taskID uint32) (Task, error) {
-	sql := "SELECT * FROM task WHERE task_id = $1;"
+	sql := ("SELECT task.*, " +
+		"person.username, person.first_name, person.last_name, person.email " +
+		"FROM task " +
+		"JOIN person ON person_id = author_id " +
+		"WHERE task_id = $1")
 
 	var obtainedTask Task
 	err := tm.DB.QueryRow(context.Background(), sql, taskID).Scan(
@@ -62,25 +83,50 @@ func (tm TaskModel) GetByID(taskID uint32) (Task, error) {
 		&obtainedTask.Name,
 		&obtainedTask.Description,
 		&obtainedTask.BoardID,
-		&obtainedTask.AuthorID,
-		&obtainedTask.ExecutorID,
+		&obtainedTask.Author.ID,
+		&obtainedTask.Author.Username,
+		&obtainedTask.Author.FirstName,
+		&obtainedTask.Author.LastName,
+		&obtainedTask.Author.Email,
 	)
 
 	if err != nil {
-		return Task{}, fmt.Errorf("PersonModel.GetByID() -> %w", err)
+		return Task{}, fmt.Errorf("TaskModel.GetByID() -> %w", err)
 	}
 
 	obtainedTask, err = tm.loadTags(obtainedTask)
 	if err != nil {
-		return Task{}, fmt.Errorf("TaskModel.AddTagToTask() -> %w", err)
+		return Task{}, fmt.Errorf("TaskModel.GetByID() -> %w", err)
+	}
+
+	obtainedTask, err = tm.loadAssignees(obtainedTask)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.GetByID() -> %w", err)
 	}
 
 	return obtainedTask, nil
 }
 
+// AssignPersonToTask - assigning task to person in assignee table.
+func (tm TaskModel) AssignPersonToTask(person Person, task Task) (Task, error) {
+	sql := "INSERT INTO assignee (ref_task_id, assignee_id) VALUES ($1, $2);"
+	_, err := tm.DB.Exec(context.Background(), sql, task.ID, person.ID)
+
+	task, err = tm.loadTags(task)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.AssignTaskToPerson() -> %w", err)
+	}
+
+	task, err = tm.loadAssignees(task)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.AssignTaskToPerson() -> %w", err)
+	}
+	return task, nil
+}
+
 // AddTagToTask - add tag to task in task_tag table.
 func (tm TaskModel) AddTagToTask(tag Tag, task Task) (Task, error) {
-	sql := "insert into task_tag (ref_tag_id, ref_task_id) values ($1, $2);"
+	sql := "INSERT INTO task_tag (ref_tag_id, ref_task_id) VALUES ($1, $2);"
 	_, err := tm.DB.Exec(context.Background(), sql, tag.ID, task.ID)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.AddTagToTask() -> %w", err)
@@ -90,6 +136,41 @@ func (tm TaskModel) AddTagToTask(tag Tag, task Task) (Task, error) {
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.AddTagToTask() -> %w", err)
 	}
+
+	task, err = tm.loadAssignees(task)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.AddTagToTask() -> %w", err)
+	}
+	return task, nil
+}
+
+// loadAssignees - loading assigness to Task.Assigness list.
+func (tm TaskModel) loadAssignees(task Task) (Task, error) {
+	sql := ("SELECT assignee_id, " +
+		"person.username, person.first_name, person.last_name, person.email " +
+		"FROM assignee JOIN person ON person_id = assignee_id " +
+		"WHERE ref_task_id = $1")
+
+	rows, _ := tm.DB.Query(context.Background(), sql, task.ID)
+	defer rows.Close()
+
+	var assignees []TaskAssignee
+	for rows.Next() {
+		var assignee TaskAssignee
+		err := rows.Scan(&assignee.ID, &assignee.Username, &assignee.FirstName,
+			&assignee.LastName, &assignee.Email)
+		if err != nil {
+			return Task{}, fmt.Errorf("TaskModel.loadAssigness() -> %w", err)
+		}
+
+		assignees = append(assignees, assignee)
+	}
+
+	if err := rows.Err(); err != nil {
+		return Task{}, fmt.Errorf("TaskModel.loadAssigness() -> %w", err)
+	}
+
+	task.Assignees = assignees
 	return task, nil
 }
 
@@ -108,13 +189,13 @@ func (tm TaskModel) loadTags(task Task) (Task, error) {
 		var tag Tag
 		err := rows.Scan(&tag.ID, &tag.Name, &tag.Description, &tag.BoardID)
 		if err != nil {
-			return Task{}, fmt.Errorf("TaskModel.loadTags -> %w", err)
+			return Task{}, fmt.Errorf("TaskModel.loadTags() -> %w", err)
 		}
 		tags = append(tags, tag)
 	}
 
 	if err := rows.Err(); err != nil {
-		return Task{}, fmt.Errorf("TaskModel.loadTags -> %w", err)
+		return Task{}, fmt.Errorf("TaskModel.loadTags() -> %w", err)
 	}
 
 	task.Tags = tags

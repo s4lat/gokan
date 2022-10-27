@@ -27,9 +27,14 @@ type MockedData struct {
 	Tasks   []models.Task   `json:"tasks"`
 	Tags    []models.Tag    `json:"tags"`
 	TaskTag []struct {
-		TaskID uint32 `json:"task_id"`
-		TagID  uint32 `json:"tag_id"`
+		TaskID uint32 `json:"ref_task_id"`
+		TagID  uint32 `json:"ref_tag_id"`
 	} `json:"task_tag"`
+
+	Assignees []struct {
+		TaskID     uint32 `json:"ref_task_id"`
+		AssigneeID uint32 `json:"assignee_id"`
+	} `json:"assignees"`
 }
 
 func LoadMockData() (MockedData, error) {
@@ -347,7 +352,7 @@ func TestTaskCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "Subtasks", "Tags")
+	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "Subtasks", "Tags", "Assignees")
 	for _, mockedTask := range mockedData.Tasks {
 		createdTask, err := db.Task.Create(mockedTask)
 		if err != nil {
@@ -458,7 +463,7 @@ func TestTagGetByID(t *testing.T) {
 		t.Error("Searching for tag with non-existent tagID not throwing error")
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "ID")
+	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "ID", "Assignees")
 	for _, mockedTag := range mockedData.Tags {
 		obtainedTag, err := db.Tag.GetByID(mockedTag.ID)
 		if err != nil {
@@ -509,14 +514,60 @@ OuterFor:
 			t.Error(err)
 		}
 
-		fmt.Print("kek")
-
 		for _, tag := range task.Tags {
 			if tag.ID == taskTag.TagID {
-				t.Logf("Task[%d]. %v", task.ID, task.Tags)
+				t.Logf("Successfully added tags to task: %v - %v", task.ID, task.Tags)
 				continue OuterFor
 			}
 		}
 		t.Errorf("Tag not added to task.Tags: \n\t%v\n\t%v", tag, task.Tags)
+	}
+}
+
+func TestTaskAssignPersonToTask(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedTasks(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedTags(); err != nil {
+		t.Fatal(err)
+	}
+
+OuterFor:
+	for _, mockedAssign := range mockedData.Assignees {
+		task, err := db.Task.GetByID(mockedAssign.TaskID)
+		if err != nil {
+			t.Error(err)
+		}
+		person, err := db.Person.GetByID(mockedAssign.AssigneeID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		task, err = db.Task.AssignPersonToTask(person, task)
+		if err != nil {
+			t.Error(err)
+		}
+
+		for _, assignee := range task.Assignees {
+			if assignee.ID == mockedAssign.AssigneeID {
+				t.Logf("Successfully assigned task to person: %v - %v", task.ID, task.Assignees)
+				continue OuterFor
+			}
+		}
+
+		t.Errorf("Person not added to task.Assignees: \n\t%v\n\t%v", person, task.Assignees)
 	}
 }

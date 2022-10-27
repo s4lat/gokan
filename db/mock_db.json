@@ -1,4 +1,26 @@
 {
+  "assignees": [
+    {
+      "assignee_id": 2,
+      "ref_task_id": 1
+    },
+    {
+      "assignee_id": 1,
+      "ref_task_id": 1
+    },
+    {
+      "assignee_id": 2,
+      "ref_task_id": 2
+    },
+    {
+      "assignee_id": 3,
+      "ref_task_id": 1
+    },
+    {
+      "assignee_id": 1,
+      "ref_task_id": 3
+    }
+  ],
   "boards": [
     {
       "board_id": 1,
@@ -71,29 +93,35 @@
   ],
   "task_tag": [
     {
-      "tag_id": 2,
-      "task_id": 1
+      "ref_tag_id": 2,
+      "ref_task_id": 1
     },
     {
-      "tag_id": 1,
-      "task_id": 1
+      "ref_tag_id": 1,
+      "ref_task_id": 1
     },
     {
-      "tag_id": 2,
-      "task_id": 2
+      "ref_tag_id": 2,
+      "ref_task_id": 2
     },
     {
-      "tag_id": 3,
-      "task_id": 1
+      "ref_tag_id": 3,
+      "ref_task_id": 1
     },
     {
-      "tag_id": 1,
-      "task_id": 3
+      "ref_tag_id": 1,
+      "ref_task_id": 3
     }
   ],
   "tasks": [
     {
-      "author_id": 1,
+      "author": {
+        "email": "s4lat@mail.ru",
+        "first_name": "Maxim",
+        "last_name": "Zakazchik",
+        "person_id": 1,
+        "username": "s4lat"
+      },
       "board_id": 2,
       "executor_id": 1,
       "task_description": "Implement dbManager.CreateTask() in PostgredDB",
@@ -101,23 +129,40 @@
       "task_name": "Implement CreateTask()"
     },
     {
-      "author_id": 2,
+      "author": {
+        "email": "kris@mail.com",
+        "first_name": "Kristina",
+        "last_name": "Shvonkina",
+        "person_id": 2,
+        "username": "bubbl3gym"
+      },
       "board_id": 1,
-      "executor_id": 1,
       "task_description": "Kek lol",
       "task_id": 2,
       "task_name": "SOmethign dodod"
     },
     {
-      "author_id": 4,
+      "author": {
+        "email": "shad@mail.ru",
+        "first_name": "Vadim",
+        "last_name": "Kadyring",
+        "person_id": 4,
+        "username": "GalaxyShad"
+      },
       "board_id": 2,
-      "executor_id": 4,
       "task_description": "babob bi",
       "task_id": 3,
       "task_name": "Bibabbo"
     },
     {
-      "author_id": 3,
+      "author": {
+        "email": "popa13@mail.ru",
+        "first_name": "Vova",
+        "last_name": "Popov",
+        "password_hash": "ashdasdh231asdh",
+        "person_id": 3,
+        "username": "bratishkinoff"
+      },
       "board_id": 1,
       "task_description": "Another one",
       "task_id": 4,

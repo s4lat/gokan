@@ -41,8 +41,14 @@ func (sm SystemModel) RecreateAllTables() error {
 			"task_name VARCHAR NOT NULL," +
 			"task_description VARCHAR," +
 			"board_id INTEGER REFERENCES board (board_id) ON DELETE CASCADE," +
-			"author_id INTEGER REFERENCES person (person_id) ON DELETE SET NULL NOT NULL," +
-			"executor_id INTEGER REFERENCES person (person_id) ON DELETE SET DEFAULT DEFAULT (0)" +
+			"author_id INTEGER REFERENCES person (person_id) ON DELETE SET NULL NOT NULL" +
+			");")
+
+		createAssigneeSQL = ("" +
+			"CREATE TABLE assignee (" +
+			"ref_task_id INTEGER REFERENCES task (task_id) ON DELETE CASCADE NOT NULL," +
+			"assignee_id INTEGER REFERENCES person (person_id) ON DELETE CASCADE NOT NULL," +
+			"CONSTRAINT assignee_pkey PRIMARY KEY (ref_task_id, assignee_id)" +
 			");")
 
 		createSubtaskTableSQL = ("" +
@@ -83,6 +89,7 @@ func (sm SystemModel) RecreateAllTables() error {
 		createPersonTableSQL,
 		createBoardTableSQL,
 		createTaskTableSQL,
+		createAssigneeSQL,
 		createSubtaskTableSQL,
 		createTagTableSQL,
 		createTaskTagTableSQL,
