@@ -49,6 +49,7 @@ type TaskManager interface {
 	Create(task models.Task) (models.Task, error)
 	GetByID(taskID uint32) (models.Task, error)
 	AddTagToTask(tag models.Tag, task models.Task) (models.Task, error)
+	AssignPersonToTask(person models.Person, task models.Task) (models.Task, error)
 }
 
 // TagManager - interface for interacting with tag table in db.
