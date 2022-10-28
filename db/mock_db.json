@@ -72,6 +72,33 @@
       "username": "GalaxyShad"
     }
   ],
+  "subtasks": [
+    {
+      "parent_task_id": 2,
+      "subtask_id": 1,
+      "subtask_name": "pupa lupa"
+    },
+    {
+      "parent_task_id": 1,
+      "subtask_id": 2,
+      "subtask_name": "duper puper"
+    },
+    {
+      "parent_task_id": 3,
+      "subtask_id": 3,
+      "subtask_name": "waterwoman"
+    },
+    {
+      "parent_task_id": 3,
+      "subtask_id": 4,
+      "subtask_name": "enderman"
+    },
+    {
+      "parent_task_id": 1,
+      "subtask_id": 5,
+      "subtask_name": "gripper scripper"
+    }
+  ],
   "tags": [
     {
       "board_id": 2,

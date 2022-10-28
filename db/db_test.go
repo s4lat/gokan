@@ -1,5 +1,4 @@
 //nolint:gocognit
-
 package db
 
 import (
@@ -22,11 +21,12 @@ var DBURL = "postgres://user:password@localhost:5432/test"
 var db DB
 
 type MockedData struct {
-	Persons []models.Person `json:"persons"`
-	Boards  []models.Board  `json:"boards"`
-	Tasks   []models.Task   `json:"tasks"`
-	Tags    []models.Tag    `json:"tags"`
-	TaskTag []struct {
+	Persons  []models.Person  `json:"persons"`
+	Boards   []models.Board   `json:"boards"`
+	Tasks    []models.Task    `json:"tasks"`
+	Tags     []models.Tag     `json:"tags"`
+	Subtasks []models.Subtask `json:"subtasks"`
+	TaskTag  []struct {
 		TaskID uint32 `json:"ref_task_id"`
 		TagID  uint32 `json:"ref_tag_id"`
 	} `json:"task_tag"`
@@ -40,12 +40,12 @@ type MockedData struct {
 func LoadMockData() (MockedData, error) {
 	jsonData, err := os.ReadFile("mock_db.json")
 	if err != nil {
-		return MockedData{}, fmt.Errorf("LoadMockData -> %w", err)
+		return MockedData{}, fmt.Errorf("LoadMockData() -> %w", err)
 	}
 
 	var mockedData MockedData
 	if err := json.Unmarshal(jsonData, &mockedData); err != nil {
-		return MockedData{}, fmt.Errorf("LoadMockData -> %w", err)
+		return MockedData{}, fmt.Errorf("LoadMockData() -> %w", err)
 	}
 	return mockedData, nil
 }
@@ -514,9 +514,18 @@ OuterFor:
 			t.Error(err)
 		}
 
+		mockedTag, err := db.Tag.GetByID(taskTag.TagID)
+		if err != nil {
+			t.Error(err)
+		}
+
 		for _, tag := range task.Tags {
 			if tag.ID == taskTag.TagID {
-				t.Logf("Successfully added tags to task: %v - %v", task.ID, task.Tags)
+				if !cmp.Equal(tag, mockedTag) {
+					t.Errorf("Obtained tag not equal to mocked: \n\t%v \n\t%v",
+						tag, mockedTag)
+				}
+				t.Logf("Successfully added tag to task: %v - %v", task.ID, task.Tags)
 				continue OuterFor
 			}
 		}
@@ -569,5 +578,51 @@ OuterFor:
 		}
 
 		t.Errorf("Person not added to task.Assignees: \n\t%v\n\t%v", person, task.Assignees)
+	}
+}
+
+func TestTaskAddSubtaskToTask(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedTasks(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedTags(); err != nil {
+		t.Fatal(err)
+	}
+
+OuterFor:
+	for _, mockedSubtask := range mockedData.Subtasks {
+		task, err := db.Task.GetByID(mockedSubtask.ParentTaskID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		task, err = db.Task.AddSubtaskToTask(mockedSubtask, task)
+		if err != nil {
+			t.Error(err)
+		}
+
+		for _, subtask := range task.Subtasks {
+			if subtask.ID == mockedSubtask.ID && !cmp.Equal(subtask, mockedSubtask) {
+				t.Errorf("Obtained subtask not equal to mocked: \n\t%v \n\t%v",
+					subtask, mockedSubtask)
+			}
+			t.Logf("Successfully added subtask to task: %v - %v", task.ID, task.Subtasks)
+			continue OuterFor
+		}
+
+		t.Errorf("Subtask not added to task.Subtasks: \n\t%v\n\t%v", mockedSubtask, task.Assignees)
 	}
 }
