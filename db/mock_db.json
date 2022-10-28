@@ -25,17 +25,35 @@
     {
       "board_id": 1,
       "board_name": "GoSavingsBot",
-      "owner_id": 1
+      "owner": {
+        "email": "s4lat@mail.ru",
+        "first_name": "Maxim",
+        "last_name": "Zakazchik",
+        "person_id": 1,
+        "username": "s4lat"
+      }
     },
     {
       "board_id": 2,
       "board_name": "GoKan",
-      "owner_id": 1
+      "owner": {
+        "email": "s4lat@mail.ru",
+        "first_name": "Maxim",
+        "last_name": "Zakazchik",
+        "person_id": 1,
+        "username": "s4lat"
+      }
     },
     {
       "board_id": 3,
       "board_name": "ZumaHD",
-      "owner_id": 4
+      "owner": {
+        "email": "shad@mail.ru",
+        "first_name": "Vadim",
+        "last_name": "Kadyring",
+        "person_id": 4,
+        "username": "GalaxyShad"
+      }
     }
   ],
   "contributors": [

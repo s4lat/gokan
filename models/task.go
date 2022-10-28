@@ -24,17 +24,11 @@ type Subtask struct {
 	ParentTaskID uint32 `json:"parent_task_id"`
 }
 
-// TaskAuthor - struct that represents task author.
-type TaskAuthor struct {
-	Username  string `json:"username"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	ID        uint32 `json:"person_id"`
-}
+// TaskAuthor - other name for SmallPerson struct, used for representing task author in Task struct.
+type TaskAuthor SmallPerson
 
-// TaskAssignee - other name for TaskAuthor struct, used for representing task executor in Task Struct.
-type TaskAssignee TaskAuthor
+// TaskAssignee - other name for SmallPerson struct, used for representing task executor in Task struct.
+type TaskAssignee SmallPerson
 
 // TaskModel - struct that implements TaskManager interface for interacting with task table in db.
 type TaskModel struct {

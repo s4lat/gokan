@@ -301,13 +301,13 @@ func TestBoardCreate(t *testing.T) {
 		t.Logf("Created: %v", createdBoard)
 	}
 
-	badBoard := models.Board{Name: "badBoard", OwnerID: 1337}
+	badBoard := models.Board{Name: "badBoard", Owner: models.BoardOwner{ID: 1337}}
 	if _, err := db.Board.Create(badBoard); err == nil {
 		t.Error("BoardModel.Create() does't throw error when creating rows with non-existent owner_id")
 	}
 }
 
-func BoardGetByID(t *testing.T) {
+func TestBoardGetByID(t *testing.T) {
 	if err := db.System.RecreateAllTables(); err != nil {
 		t.Fatal(err)
 	}

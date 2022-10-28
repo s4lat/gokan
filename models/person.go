@@ -17,6 +17,22 @@ type Person struct {
 	ID            uint32  `json:"person_id"`
 }
 
+// SmallPerson - is a struct, that used to save person data in some other structs, when
+// we don't need to save all person information like password, board, assigned tasks and other.
+type SmallPerson struct {
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	ID        uint32 `json:"person_id"`
+}
+
+// Small - return SmallPerson representation of Person.
+func (p *Person) Small() SmallPerson {
+	return SmallPerson{Username: p.Username, FirstName: p.FirstName,
+		LastName: p.LastName, Email: p.Email, ID: p.ID}
+}
+
 // IsContributor - checks if p of type Person represent same row from db as contrib of type Contributor.
 func (p *Person) IsContributor(contrib Contributor) bool {
 	isEqual := true
