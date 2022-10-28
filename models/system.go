@@ -127,7 +127,7 @@ func (sm SystemModel) IsTableExist(tableName string) (bool, error) {
 // dropAllTables - drops public scheme with all tables.
 func (sm SystemModel) dropAllTables() error {
 	const (
-		sql1 = "DROP SCHEMA public CASCADE"
+		sql1 = "DROP SCHEMA IF EXISTS public CASCADE"
 		sql2 = "CREATE SCHEMA public;"
 	)
 
