@@ -97,17 +97,7 @@ func (tm TaskModel) GetByID(taskID uint32) (Task, error) {
 		return Task{}, fmt.Errorf("TaskModel.GetByID() -> %w", err)
 	}
 
-	obtainedTask, err = tm.loadTags(obtainedTask)
-	if err != nil {
-		return Task{}, fmt.Errorf("TaskModel.GetByID() -> %w", err)
-	}
-
-	obtainedTask, err = tm.loadAssignees(obtainedTask)
-	if err != nil {
-		return Task{}, fmt.Errorf("TaskModel.GetByID() -> %w", err)
-	}
-
-	obtainedTask, err = tm.loadSubtasks(obtainedTask)
+	obtainedTask, err = tm.loadEverything(obtainedTask)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.GetByID() -> %w", err)
 	}
@@ -158,6 +148,31 @@ func (tm TaskModel) AddSubtaskToTask(subtask Subtask, task Task) (Task, error) {
 	task, err = tm.loadSubtasks(task)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.AddSubtaskToTask() -> %w", err)
+	}
+
+	return task, nil
+}
+
+// loadEverything - combines loadTags, loadSubtasks, loadAssignees in one method.
+func (tm TaskModel) loadEverything(task Task) (Task, error) {
+	task, err := tm.loadTags(task)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.loadEverything() -> %w", err)
+	}
+
+	task, err = tm.loadSubtasks(task)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.loadEverything() -> %w", err)
+	}
+
+	task, err = tm.loadAssignees(task)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.loadEverything() -> %w", err)
+	}
+
+	task, err = tm.loadTags(task)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.loadEverything() -> %w", err)
 	}
 
 	return task, nil

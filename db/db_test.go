@@ -187,7 +187,7 @@ func TestPersonGetByID(t *testing.T) {
 		t.Error("Searching for user with non-existent ID not throwing error")
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
+	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards")
 	for _, mockedPerson := range mockedData.Persons {
 		obtainedPerson, err := db.Person.GetByID(mockedPerson.ID)
 		if err != nil {
@@ -765,5 +765,127 @@ OuterFor:
 		}
 
 		t.Errorf("Contributor not added to board.Contributors: \n\t%v\n\t%v", person, board.Contributors)
+	}
+}
+
+func TestPersonLoadAssignedTasks(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedTasks(); err != nil {
+		t.Fatal(err)
+	}
+
+OuterFor:
+	for _, assignRow := range mockedData.Assignees {
+		mockedTask, err := db.Task.GetByID(assignRow.TaskID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		person, err := db.Person.GetByID(assignRow.AssigneeID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		mockedTask, err = db.Task.AssignPersonToTask(person, mockedTask)
+		if err != nil {
+			t.Error(err)
+		}
+
+		person, err = db.Person.GetByID(person.ID)
+		if err != nil {
+			t.Error(err)
+		}
+		for _, task := range person.AssignedTasks {
+			if task.ID == assignRow.TaskID {
+				if !cmp.Equal(task, mockedTask) {
+					t.Errorf("Loaded assigned task not equal to mocked: \n\t%v \n\t%v",
+						task, mockedTask)
+				} else {
+					t.Logf("Successfully loaded assigned task to person: %v - %v", person.ID, person.AssignedTasks)
+					continue OuterFor
+				}
+			}
+		}
+
+		t.Errorf("Task not loaded to person.AssignedTasks: \n\t%v\n\t%v", mockedTask, person.AssignedTasks)
+	}
+}
+
+func TestPersonLoadBoards(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, mockedContributor := range mockedData.Contributors {
+		board, err := db.Board.GetByID(mockedContributor.BoardID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		person, err := db.Person.GetByID(mockedContributor.PersonID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		board, err = db.Board.AddPersonToBoard(person, board)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+OuterFor:
+	for _, mockedContributor := range mockedData.Contributors {
+		person, err := db.Person.GetByID(mockedContributor.PersonID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		mockedBoard, err := db.Board.GetByID(mockedContributor.BoardID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		for _, board := range person.Boards {
+			if board.ID == mockedBoard.ID {
+				if !cmp.Equal(mockedBoard.Small(), board) {
+					t.Errorf("Loaded board not equal to mocked: \n\t%v \n\t%v",
+						board, mockedBoard.Small())
+				} else {
+					t.Logf("Successfully loaded board to person: %v - %v", person.ID, person.Boards)
+					continue OuterFor
+				}
+			}
+		}
+
+		t.Errorf("Board not loaded to person.Boards: \n\t%v\n\t%v", mockedBoard.Small(), person.Boards)
 	}
 }
