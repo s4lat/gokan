@@ -663,3 +663,43 @@ OuterFor:
 		t.Errorf("Tag not added to board.Tags: \n\t%v\n\t%v", mockedTag, board.Tags)
 	}
 }
+
+func TestBoardAddTaskToBoard(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+
+OuterFor:
+	for _, mockedTask := range mockedData.Tasks {
+		board, err := db.Board.GetByID(mockedTask.BoardID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		board, err = db.Board.AddTaskToBoard(mockedTask, board)
+		if err != nil {
+			t.Error(err)
+		}
+
+		for _, task := range board.Tasks {
+			if task.ID == mockedTask.ID && !cmp.Equal(task, mockedTask) {
+				t.Errorf("Added task not equal to mocked: \n\t%v \n\t%v",
+					task, mockedTask)
+			}
+			t.Logf("Successfully added task to board: %v - %v", board.ID, board.Tasks)
+			continue OuterFor
+		}
+
+		t.Errorf("Task not added to board.Tasks: \n\t%v\n\t%v", mockedTask, board.Tasks)
+	}
+}

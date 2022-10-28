@@ -20,6 +20,8 @@ type TagModel struct {
 
 // Create - Creates new row in table 'tag'.
 // Returning created Person.
+//
+// Don't use directly, to create new tag use BoardModel.AddTagToBoard.
 func (tm TagModel) Create(tag Tag) (Tag, error) {
 	sql := ("INSERT INTO " +
 		"tag (tag_name, tag_description, board_id) " +
