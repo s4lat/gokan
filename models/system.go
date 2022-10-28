@@ -55,7 +55,7 @@ func (sm SystemModel) RecreateAllTables() error {
 			"CREATE TABLE subtask (" +
 			"subtask_id serial PRIMARY KEY," +
 			"subtask_name VARCHAR NOT NULL," +
-			"parent_task_id INTEGER REFERENCES task (task_id) ON DELETE CASCADE" +
+			"parent_task_id INTEGER REFERENCES task (task_id) ON DELETE CASCADE NOT NULL" +
 			");")
 
 		createTagTableSQL = ("" +
