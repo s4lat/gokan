@@ -42,6 +42,7 @@ type PersonManager interface {
 type BoardManager interface {
 	Create(board models.Board) (models.Board, error)
 	GetByID(boardID uint32) (models.Board, error)
+	AddTagToBoard(tag models.Tag, board models.Board) (models.Board, error)
 }
 
 // TaskManager - interface for interacting with task table in db.

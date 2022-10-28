@@ -116,6 +116,11 @@
       "tag_description": "has executor",
       "tag_id": 3,
       "tag_name": "assigned"
+    },
+    {
+      "board_id": 2,
+      "tag_id": 4,
+      "tag_name": "Bebebery"
     }
   ],
   "task_tag": [
