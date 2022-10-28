@@ -52,11 +52,42 @@ func (bm BoardModel) GetByID(boardID uint32) (Board, error) {
 		&obtainedBoard.Name,
 		&obtainedBoard.OwnerID,
 	)
-
 	if err != nil {
 		return Board{}, fmt.Errorf("BoardModel.GetByID() -> %w", err)
 	}
+
+	obtainedBoard, err = bm.loadTags(obtainedBoard)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.GetByID() -> %w", err)
+	}
+
+	obtainedBoard, err = bm.loadTasks(obtainedBoard)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.GetByID() -> %w", err)
+	}
+
 	return obtainedBoard, nil
+}
+
+// AddTaskToBoard - add task to table 'task' in db with board_id = board.ID.
+func (bm BoardModel) AddTaskToBoard(task Task, board Board) (Board, error) {
+	task.BoardID = board.ID
+	_, err := TaskModel(bm).Create(task)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.AddTaskToBoard() -> %w", err)
+	}
+
+	board, err = bm.loadTags(board)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.AddTaskToBoard() -> %w", err)
+	}
+
+	board, err = bm.loadTasks(board)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.GetByID() -> %w", err)
+	}
+
+	return board, nil
 }
 
 // AddTagToBoard - add tag to table 'tag' in db with board_id = board.ID.
@@ -97,5 +128,37 @@ func (bm BoardModel) loadTags(board Board) (Board, error) {
 	}
 
 	board.Tags = tags
+	return board, nil
+}
+
+// loadTasks - loading tasks in Board.Tasks slice.
+func (bm BoardModel) loadTasks(board Board) (Board, error) {
+	sql := "SELECT task_id FROM task WHERE board_id=$1"
+
+	rows, _ := bm.DB.Query(context.Background(), sql, board.ID)
+	defer rows.Close()
+
+	localTaskModel := TaskModel(bm)
+	var tasks []Task
+	for rows.Next() {
+		var taskID uint32
+		err := rows.Scan(&taskID)
+		if err != nil {
+			return Board{}, fmt.Errorf("BoardModel.loadTags() -> %w", err)
+		}
+
+		task, err := localTaskModel.GetByID(taskID)
+		if err != nil {
+			return Board{}, fmt.Errorf("BoardModel.loadTags() -> %w", err)
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	if err := rows.Err(); err != nil {
+		return Board{}, fmt.Errorf("BoardModel.loadTags() -> %w", err)
+	}
+
+	board.Tasks = tasks
 	return board, nil
 }

@@ -43,6 +43,8 @@ type TaskModel struct {
 
 // Create - Creates new row in table 'task' with values from `t` fields,
 // Returning created Task.
+//
+// Don't use directly, to create new task use BoardModel.AddTaskToBoard.
 func (tm TaskModel) Create(t Task) (Task, error) {
 	sql := ("WITH inserted_task AS (" +
 		"INSERT INTO task " +
