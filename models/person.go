@@ -17,6 +17,26 @@ type Person struct {
 	ID            uint32  `json:"person_id"`
 }
 
+// IsContributor - checks if p of type Person represent same row from db as contrib of type Contributor.
+func (p *Person) IsContributor(contrib Contributor) bool {
+	isEqual := true
+
+	switch {
+	case contrib.Username != p.Username:
+		isEqual = false
+	case contrib.FirstName != p.FirstName:
+		isEqual = false
+	case contrib.LastName != p.LastName:
+		isEqual = false
+	case contrib.Email != p.Email:
+		isEqual = false
+	case contrib.ID != p.ID:
+		isEqual = false
+	}
+
+	return isEqual
+}
+
 // PersonModel - struct that implements PersonManager interface for interacting with person table in db.
 type PersonModel struct {
 	DB DBConn

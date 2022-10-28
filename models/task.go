@@ -125,6 +125,9 @@ func (tm TaskModel) GetByID(taskID uint32) (Task, error) {
 func (tm TaskModel) AssignPersonToTask(person Person, task Task) (Task, error) {
 	sql := "INSERT INTO assignee (ref_task_id, assignee_id) VALUES ($1, $2);"
 	_, err := tm.DB.Exec(context.Background(), sql, task.ID, person.ID)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.AssignTaskToPerson() -> %w", err)
+	}
 
 	task, err = tm.loadAssignees(task)
 	if err != nil {

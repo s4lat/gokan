@@ -7,12 +7,21 @@ import (
 
 // Board - board model struct.
 type Board struct {
-	Name         string   `json:"board_name"`
-	Contributors []Person // LoadBoardContributors() by person_id from contributor table
-	Tasks        []Task   // LoadBoardTasks from board_id in task table
-	Tags         []Tag    // LoadBoardTags from board_id in tag table
-	ID           uint32   `json:"board_id"`
-	OwnerID      uint32   `json:"owner_id"`
+	Name         string        `json:"board_name"`
+	Contributors []Contributor // LoadBoardContributors() by person_id from contributor table
+	Tasks        []Task
+	Tags         []Tag
+	ID           uint32 `json:"board_id"`
+	OwnerID      uint32 `json:"owner_id"`
+}
+
+// Contributor - struct that used to represent contributors(persons) in Board.Contributors field.
+type Contributor struct {
+	Username  string
+	FirstName string
+	LastName  string
+	Email     string
+	ID        uint32
 }
 
 // BoardModel - struct that implements BoardManager interface for interacting with board table in db.
@@ -66,18 +75,35 @@ func (bm BoardModel) GetByID(boardID uint32) (Board, error) {
 		return Board{}, fmt.Errorf("BoardModel.GetByID() -> %w", err)
 	}
 
+	obtainedBoard, err = bm.loadContributors(obtainedBoard)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.GetByID() -> %w", err)
+	}
+
 	return obtainedBoard, nil
+}
+
+// AddPersonToBoard - adds row in contributor table with values (person.ID, board.ID).
+func (bm BoardModel) AddPersonToBoard(person Person, board Board) (Board, error) {
+	sql := "INSERT INTO contributor (person_id, board_id) VALUES ($1, $2);"
+	_, err := bm.DB.Exec(context.Background(), sql, person.ID, board.ID)
+
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.AddPersonToBoard() -> %w", err)
+	}
+
+	board, err = bm.loadContributors(board)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.AddPersonToBoard() -> %w", err)
+	}
+
+	return board, nil
 }
 
 // AddTaskToBoard - add task to table 'task' in db with board_id = board.ID.
 func (bm BoardModel) AddTaskToBoard(task Task, board Board) (Board, error) {
 	task.BoardID = board.ID
 	_, err := TaskModel(bm).Create(task)
-	if err != nil {
-		return Board{}, fmt.Errorf("BoardModel.AddTaskToBoard() -> %w", err)
-	}
-
-	board, err = bm.loadTags(board)
 	if err != nil {
 		return Board{}, fmt.Errorf("BoardModel.AddTaskToBoard() -> %w", err)
 	}
@@ -103,6 +129,35 @@ func (bm BoardModel) AddTagToBoard(tag Tag, board Board) (Board, error) {
 		return Board{}, fmt.Errorf("BoardModel.AddTagToBoard() -> %w", err)
 	}
 
+	return board, nil
+}
+
+// loadContributors - loading contributors in Board.Contributors slice.
+func (bm BoardModel) loadContributors(board Board) (Board, error) {
+	sql := ("SELECT contributor.person_id, " +
+		"person.username, person.first_name, person.last_name, person.email " +
+		"FROM contributor JOIN person ON person.person_id = contributor.person_id " +
+		"WHERE board_id = $1")
+
+	rows, _ := bm.DB.Query(context.Background(), sql, board.ID)
+	defer rows.Close()
+
+	var contributors []Contributor
+	for rows.Next() {
+		var contributor Contributor
+		err := rows.Scan(&contributor.ID, &contributor.Username,
+			&contributor.FirstName, &contributor.LastName, &contributor.Email)
+		if err != nil {
+			return Board{}, fmt.Errorf("BoardModel.loadContributors() -> %w", err)
+		}
+		contributors = append(contributors, contributor)
+	}
+
+	if err := rows.Err(); err != nil {
+		return Board{}, fmt.Errorf("BoardModel.loadContributors() -> %w", err)
+	}
+
+	board.Contributors = contributors
 	return board, nil
 }
 
@@ -144,19 +199,19 @@ func (bm BoardModel) loadTasks(board Board) (Board, error) {
 		var taskID uint32
 		err := rows.Scan(&taskID)
 		if err != nil {
-			return Board{}, fmt.Errorf("BoardModel.loadTags() -> %w", err)
+			return Board{}, fmt.Errorf("BoardModel.loadTasks() -> %w", err)
 		}
 
 		task, err := localTaskModel.GetByID(taskID)
 		if err != nil {
-			return Board{}, fmt.Errorf("BoardModel.loadTags() -> %w", err)
+			return Board{}, fmt.Errorf("BoardModel.loadTasks() -> %w", err)
 		}
 
 		tasks = append(tasks, task)
 	}
 
 	if err := rows.Err(); err != nil {
-		return Board{}, fmt.Errorf("BoardModel.loadTags() -> %w", err)
+		return Board{}, fmt.Errorf("BoardModel.loadTasks() -> %w", err)
 	}
 
 	board.Tasks = tasks
