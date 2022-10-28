@@ -83,17 +83,7 @@ func (bm BoardModel) GetByID(boardID uint32) (Board, error) {
 		return Board{}, fmt.Errorf("BoardModel.GetByID() -> %w", err)
 	}
 
-	obtainedBoard, err = bm.loadTags(obtainedBoard)
-	if err != nil {
-		return Board{}, fmt.Errorf("BoardModel.GetByID() -> %w", err)
-	}
-
-	obtainedBoard, err = bm.loadTasks(obtainedBoard)
-	if err != nil {
-		return Board{}, fmt.Errorf("BoardModel.GetByID() -> %w", err)
-	}
-
-	obtainedBoard, err = bm.loadContributors(obtainedBoard)
+	obtainedBoard, err = bm.loadEverything(obtainedBoard)
 	if err != nil {
 		return Board{}, fmt.Errorf("BoardModel.GetByID() -> %w", err)
 	}
@@ -176,6 +166,26 @@ func (bm BoardModel) loadContributors(board Board) (Board, error) {
 	}
 
 	board.Contributors = contributors
+	return board, nil
+}
+
+// loadEverything - combines loadTags, loadTasks, loadContributors in one method.
+func (bm BoardModel) loadEverything(board Board) (Board, error) {
+	board, err := bm.loadTags(board)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.loadEverything() -> %w", err)
+	}
+
+	board, err = bm.loadTasks(board)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.loadEverything() -> %w", err)
+	}
+
+	board, err = bm.loadContributors(board)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.loadEverything() -> %w", err)
+	}
+
 	return board, nil
 }
 

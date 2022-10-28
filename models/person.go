@@ -106,6 +106,12 @@ func (pm PersonModel) GetByID(personID uint32) (Person, error) {
 	if err != nil {
 		return Person{}, fmt.Errorf("PersonModel.GetByID() -> %w", err)
 	}
+
+	obtainedPerson, err = pm.loadEverything(obtainedPerson)
+	if err != nil {
+		return Person{}, fmt.Errorf("PersonModel.GetByID() -> %w", err)
+	}
+
 	return obtainedPerson, nil
 }
 
@@ -126,6 +132,12 @@ func (pm PersonModel) GetByEmail(email string) (Person, error) {
 	if err != nil {
 		return Person{}, fmt.Errorf("PersonModel.GetByEmail() -> %w", err)
 	}
+
+	obtainedPerson, err = pm.loadEverything(obtainedPerson)
+	if err != nil {
+		return Person{}, fmt.Errorf("PersonModel.GetByEmail() -> %w", err)
+	}
+
 	return obtainedPerson, nil
 }
 
@@ -142,9 +154,65 @@ func (pm PersonModel) GetByUsername(username string) (Person, error) {
 		&obtainedPerson.Email,
 		&obtainedPerson.PasswordHash,
 	)
-
 	if err != nil {
 		return Person{}, fmt.Errorf("PersonModel.GetByUsername() -> %w", err)
 	}
+
+	obtainedPerson, err = pm.loadEverything(obtainedPerson)
+	if err != nil {
+		return Person{}, fmt.Errorf("PersonModel.GetByUsername() -> %w", err)
+	}
+
 	return obtainedPerson, nil
+}
+
+// loadEverything - combines loadAssignedTasks, loadBoards  in one method.
+func (pm PersonModel) loadEverything(person Person) (Person, error) {
+	person, err := pm.loadAssignedTasks(person)
+	if err != nil {
+		return Person{}, fmt.Errorf("PersonModel.loadEverything() -> %w", err)
+	}
+
+	person, err = pm.loadBoards(person)
+	if err != nil {
+		return Person{}, fmt.Errorf("PersonModel.loadEverything() -> %w", err)
+	}
+
+	return person, nil
+}
+
+// loadAssignedTasks - loading assigned to person tasks in Person.AssignedTasks slice.
+func (pm PersonModel) loadAssignedTasks(person Person) (Person, error) {
+	sql := "SELECT ref_task_id FROM assignee WHERE assignee_id = $1"
+
+	rows, _ := pm.DB.Query(context.Background(), sql, person.ID)
+
+	localTaskModel := TaskModel(pm)
+	defer rows.Close()
+	var assignedTasks []Task
+	for rows.Next() {
+		var taskID uint32
+		err := rows.Scan(&taskID)
+		if err != nil {
+			return Person{}, fmt.Errorf("PersonModel.loadAssignedTasks() -> %w", err)
+		}
+
+		task, err := localTaskModel.GetByID(taskID)
+		if err != nil {
+			return Person{}, fmt.Errorf("PersonModel.loadAssignedTasks() -> %w", err)
+		}
+
+		assignedTasks = append(assignedTasks, task)
+	}
+
+	if err := rows.Err(); err != nil {
+		return Person{}, fmt.Errorf("PersonModel.loadAssignedTasks() -> %w", err)
+	}
+
+	person.AssignedTasks = assignedTasks
+	return person, nil
+}
+
+func (pm PersonModel) loadBoards(person Person) (Person, error) {
+	return person, nil
 }
