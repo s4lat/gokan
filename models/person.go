@@ -7,14 +7,14 @@ import (
 
 // Person - person model struct.
 type Person struct {
-	Username      string  `json:"username"`
-	FirstName     string  `json:"first_name"`
-	LastName      string  `json:"last_name"`
-	Email         string  `json:"email"`
-	PasswordHash  string  `json:"password_hash"`
-	Boards        []Board // LoadPersonBoards(), by board_id from contributor table
-	AssignedTasks []Task  // LoadPersonAssignedTasks(), from executor_id in task
-	ID            uint32  `json:"person_id"`
+	Username      string       `json:"username"`
+	FirstName     string       `json:"first_name"`
+	LastName      string       `json:"last_name"`
+	Email         string       `json:"email"`
+	PasswordHash  string       `json:"password_hash"`
+	Boards        []SmallBoard // LoadPersonBoards(), by board_id from contributor table
+	AssignedTasks []Task       // LoadPersonAssignedTasks(), from executor_id in task
+	ID            uint32       `json:"person_id"`
 }
 
 // SmallPerson - is a struct, that used to save person data in some other structs, when
@@ -213,6 +213,37 @@ func (pm PersonModel) loadAssignedTasks(person Person) (Person, error) {
 	return person, nil
 }
 
+// loadBoards - loads owned and contributed by person, boards.
 func (pm PersonModel) loadBoards(person Person) (Person, error) {
+	sql := ("SELECT board.*, username, first_name, last_name, email " +
+		"FROM board JOIN person ON person_id = owner_id " +
+		"WHERE owner_id = $1 " +
+		"UNION " +
+		"SELECT board.*, username, first_name, last_name, email " +
+		"FROM contributor " +
+		"JOIN board ON contributor.board_id = board.board_id " +
+		"JOIN person ON board.owner_id = person.person_id " +
+		"WHERE contributor.person_id = $1")
+
+	rows, _ := pm.DB.Query(context.Background(), sql, person.ID)
+	var boards []SmallBoard
+	for rows.Next() {
+		var board SmallBoard
+		err := rows.Scan(&board.ID, &board.Name,
+			&board.Owner.ID, &board.Owner.Username, &board.Owner.FirstName,
+			&board.Owner.LastName, &board.Owner.Email)
+
+		if err != nil {
+			return Person{}, fmt.Errorf("PersonModel.loadBoards() -> %w", err)
+		}
+
+		boards = append(boards, board)
+	}
+
+	if err := rows.Err(); err != nil {
+		return Person{}, fmt.Errorf("PersonModel.loadBoards() -> %w", err)
+	}
+
+	person.Boards = boards
 	return person, nil
 }

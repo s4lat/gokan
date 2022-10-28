@@ -15,6 +15,19 @@ type Board struct {
 	ID           uint32 `json:"board_id"`
 }
 
+// SmallBoard - is a struct, that used to save board data in some other structs, when
+// we don't need to save all board information like contributors, tasks, tags.
+type SmallBoard struct {
+	Name  string
+	Owner BoardOwner
+	ID    uint32
+}
+
+// Small - return SmallBoard representation of Person.
+func (b *Board) Small() SmallBoard {
+	return SmallBoard{Name: b.Name, Owner: b.Owner, ID: b.ID}
+}
+
 // BoardOwner - other name for SmallPerson struct, used for representing board owner in Board struct.
 type BoardOwner SmallPerson
 
@@ -93,6 +106,11 @@ func (bm BoardModel) GetByID(boardID uint32) (Board, error) {
 
 // AddPersonToBoard - adds row in contributor table with values (person.ID, board.ID).
 func (bm BoardModel) AddPersonToBoard(person Person, board Board) (Board, error) {
+	if person.ID == board.Owner.ID {
+		return Board{}, fmt.Errorf("BoardModel.AddPersonToBoard ->" +
+			"person is board owner, no need to add in contributors")
+	}
+
 	sql := "INSERT INTO contributor (person_id, board_id) VALUES ($1, $2);"
 	_, err := bm.DB.Exec(context.Background(), sql, person.ID, board.ID)
 
