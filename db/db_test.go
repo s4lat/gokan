@@ -598,9 +598,6 @@ func TestTaskAddSubtaskToTask(t *testing.T) {
 	if err := mockedData.CreateMockedTasks(); err != nil {
 		t.Fatal(err)
 	}
-	if err := mockedData.CreateMockedTags(); err != nil {
-		t.Fatal(err)
-	}
 
 OuterFor:
 	for _, mockedSubtask := range mockedData.Subtasks {
@@ -624,5 +621,45 @@ OuterFor:
 		}
 
 		t.Errorf("Subtask not added to task.Subtasks: \n\t%v\n\t%v", mockedSubtask, task.Assignees)
+	}
+}
+
+func TestBoardAddTagToBoard(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+
+OuterFor:
+	for _, mockedTag := range mockedData.Tags {
+		board, err := db.Board.GetByID(mockedTag.BoardID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		board, err = db.Board.AddTagToBoard(mockedTag, board)
+		if err != nil {
+			t.Error(err)
+		}
+
+		for _, tag := range board.Tags {
+			if tag.ID == mockedTag.ID && !cmp.Equal(tag, mockedTag) {
+				t.Errorf("Added tag not equal to mocked: \n\t%v \n\t%v",
+					tag, mockedTag)
+			}
+			t.Logf("Successfully added tag to board: %v - %v", board.ID, board.Tags)
+			continue OuterFor
+		}
+
+		t.Errorf("Tag not added to board.Tags: \n\t%v\n\t%v", mockedTag, board.Tags)
 	}
 }
