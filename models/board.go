@@ -7,13 +7,16 @@ import (
 
 // Board - board model struct.
 type Board struct {
+	Owner        BoardOwner    `json:"owner"`
 	Name         string        `json:"board_name"`
 	Contributors []Contributor // LoadBoardContributors() by person_id from contributor table
 	Tasks        []Task
 	Tags         []Tag
 	ID           uint32 `json:"board_id"`
-	OwnerID      uint32 `json:"owner_id"`
 }
+
+// BoardOwner - other name for SmallPerson struct, used for representing board owner in Board struct.
+type BoardOwner SmallPerson
 
 // Contributor - struct that used to represent contributors(persons) in Board.Contributors field.
 type Contributor struct {
@@ -32,16 +35,24 @@ type BoardModel struct {
 // Create - Creates new row in table 'board'.
 // Returning created Board.
 func (bm BoardModel) Create(board Board) (Board, error) {
-	sql := "INSERT INTO board (board_name, owner_id) VALUES ($1, $2) RETURNING *;"
+	sql := ("WITH inserted_board AS ( " +
+		"INSERT INTO board (board_name, owner_id) " +
+		"VALUES ($1, $2) RETURNING *) " +
+		"SELECT inserted_board.*, username, first_name, last_name, email " +
+		"FROM inserted_board JOIN person ON person_id = owner_id;")
 
 	var createdBoard Board
 	err := bm.DB.QueryRow(context.Background(), sql,
 		board.Name,
-		board.OwnerID,
+		board.Owner.ID,
 	).Scan(
 		&createdBoard.ID,
 		&createdBoard.Name,
-		&createdBoard.OwnerID,
+		&createdBoard.Owner.ID,
+		&createdBoard.Owner.Username,
+		&createdBoard.Owner.FirstName,
+		&createdBoard.Owner.LastName,
+		&createdBoard.Owner.Email,
 	)
 
 	if err != nil {
@@ -53,14 +64,21 @@ func (bm BoardModel) Create(board Board) (Board, error) {
 
 // GetByID - searching for board in DB by ID, returning finded Board.
 func (bm BoardModel) GetByID(boardID uint32) (Board, error) {
-	sql := "SELECT * FROM board WHERE board_id = $1;"
+	sql := ("SELECT board.*, username, first_name, last_name, email " +
+		"FROM board JOIN person ON person_id = owner_id " +
+		"WHERE board_id = $1")
 
 	var obtainedBoard Board
 	err := bm.DB.QueryRow(context.Background(), sql, boardID).Scan(
 		&obtainedBoard.ID,
 		&obtainedBoard.Name,
-		&obtainedBoard.OwnerID,
+		&obtainedBoard.Owner.ID,
+		&obtainedBoard.Owner.Username,
+		&obtainedBoard.Owner.FirstName,
+		&obtainedBoard.Owner.LastName,
+		&obtainedBoard.Owner.Email,
 	)
+
 	if err != nil {
 		return Board{}, fmt.Errorf("BoardModel.GetByID() -> %w", err)
 	}
