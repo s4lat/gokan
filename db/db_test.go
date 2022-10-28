@@ -35,6 +35,11 @@ type MockedData struct {
 		TaskID     uint32 `json:"ref_task_id"`
 		AssigneeID uint32 `json:"assignee_id"`
 	} `json:"assignees"`
+
+	Contributors []struct {
+		BoardID  uint32 `json:"board_id"`
+		PersonID uint32 `json:"person_id"`
+	} `json:"contributors"`
 }
 
 func LoadMockData() (MockedData, error) {
@@ -524,9 +529,10 @@ OuterFor:
 				if !cmp.Equal(tag, mockedTag) {
 					t.Errorf("Obtained tag not equal to mocked: \n\t%v \n\t%v",
 						tag, mockedTag)
+				} else {
+					t.Logf("Successfully added tag to task: %v - %v", task.ID, task.Tags)
+					continue OuterFor
 				}
-				t.Logf("Successfully added tag to task: %v - %v", task.ID, task.Tags)
-				continue OuterFor
 			}
 		}
 		t.Errorf("Tag not added to task.Tags: \n\t%v\n\t%v", tag, task.Tags)
@@ -612,12 +618,15 @@ OuterFor:
 		}
 
 		for _, subtask := range task.Subtasks {
-			if subtask.ID == mockedSubtask.ID && !cmp.Equal(subtask, mockedSubtask) {
-				t.Errorf("Obtained subtask not equal to mocked: \n\t%v \n\t%v",
-					subtask, mockedSubtask)
+			if subtask.ID == mockedSubtask.ID {
+				if !cmp.Equal(subtask, mockedSubtask) {
+					t.Errorf("Obtained subtask not equal to mocked: \n\t%v \n\t%v",
+						subtask, mockedSubtask)
+				} else {
+					t.Logf("Successfully added subtask to task: %v - %v", task.ID, task.Subtasks)
+					continue OuterFor
+				}
 			}
-			t.Logf("Successfully added subtask to task: %v - %v", task.ID, task.Subtasks)
-			continue OuterFor
 		}
 
 		t.Errorf("Subtask not added to task.Subtasks: \n\t%v\n\t%v", mockedSubtask, task.Assignees)
@@ -652,12 +661,15 @@ OuterFor:
 		}
 
 		for _, tag := range board.Tags {
-			if tag.ID == mockedTag.ID && !cmp.Equal(tag, mockedTag) {
-				t.Errorf("Added tag not equal to mocked: \n\t%v \n\t%v",
-					tag, mockedTag)
+			if tag.ID == mockedTag.ID {
+				if !cmp.Equal(tag, mockedTag) {
+					t.Errorf("Added tag not equal to mocked: \n\t%v \n\t%v",
+						tag, mockedTag)
+				} else {
+					t.Logf("Successfully added tag to board: %v - %v", board.ID, board.Tags)
+					continue OuterFor
+				}
 			}
-			t.Logf("Successfully added tag to board: %v - %v", board.ID, board.Tags)
-			continue OuterFor
 		}
 
 		t.Errorf("Tag not added to board.Tags: \n\t%v\n\t%v", mockedTag, board.Tags)
@@ -692,14 +704,66 @@ OuterFor:
 		}
 
 		for _, task := range board.Tasks {
-			if task.ID == mockedTask.ID && !cmp.Equal(task, mockedTask) {
-				t.Errorf("Added task not equal to mocked: \n\t%v \n\t%v",
-					task, mockedTask)
+			if task.ID == mockedTask.ID {
+				if !cmp.Equal(task, mockedTask) {
+					t.Errorf("Added task not equal to mocked: \n\t%v \n\t%v",
+						task, mockedTask)
+				} else {
+					t.Logf("Successfully added task to board: %v - %v", board.ID, board.Tasks)
+					continue OuterFor
+				}
 			}
-			t.Logf("Successfully added task to board: %v - %v", board.ID, board.Tasks)
-			continue OuterFor
 		}
 
 		t.Errorf("Task not added to board.Tasks: \n\t%v\n\t%v", mockedTask, board.Tasks)
+	}
+}
+
+func TestBoardAddPersonToBoard(t *testing.T) {
+	if err := db.System.RecreateAllTables(); err != nil {
+		t.Fatal(err)
+	}
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+
+OuterFor:
+	for _, mockedContributor := range mockedData.Contributors {
+		board, err := db.Board.GetByID(mockedContributor.BoardID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		person, err := db.Person.GetByID(mockedContributor.PersonID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		board, err = db.Board.AddPersonToBoard(person, board)
+		if err != nil {
+			t.Error(err)
+		}
+
+		for _, contributor := range board.Contributors {
+			if contributor.ID == person.ID {
+				if !person.IsContributor(contributor) {
+					t.Errorf("Added contributor not equal to person: \n\t%v \n\t%v",
+						contributor, person)
+				} else {
+					t.Logf("Successfully added contributor to board: %v - %v", board.ID, board.Contributors)
+					continue OuterFor
+				}
+			}
+
+		}
+
+		t.Errorf("Contributor not added to board.Contributors: \n\t%v\n\t%v", person, board.Contributors)
 	}
 }

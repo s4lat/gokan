@@ -38,6 +38,28 @@
       "owner_id": 4
     }
   ],
+  "contributors": [
+    {
+      "board_id": 1,
+      "person_id": 1
+    },
+    {
+      "board_id": 1,
+      "person_id": 2
+    },
+    {
+      "board_id": 3,
+      "person_id": 2
+    },
+    {
+      "board_id": 2,
+      "person_id": 3
+    },
+    {
+      "board_id": 3,
+      "person_id": 3
+    }
+  ],
   "persons": [
     {
       "email": "s4lat@mail.ru",

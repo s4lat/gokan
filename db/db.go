@@ -42,6 +42,7 @@ type PersonManager interface {
 type BoardManager interface {
 	Create(board models.Board) (models.Board, error)
 	GetByID(boardID uint32) (models.Board, error)
+	AddPersonToBoard(person models.Person, board models.Board) (models.Board, error)
 	AddTaskToBoard(task models.Task, board models.Board) (models.Board, error)
 	AddTagToBoard(tag models.Tag, board models.Board) (models.Board, error)
 }
