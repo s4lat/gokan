@@ -115,10 +115,10 @@ func (tm TaskModel) GetByID(ctx context.Context, taskID uint32) (Task, error) {
 	return obtainedTask, nil
 }
 
-// AssignPersonToTask - assigning task to person in assignee table.
-func (tm TaskModel) AssignPersonToTask(ctx context.Context, person Person, task Task) (Task, error) {
+// AddAssigneeToTask - assigning task to person in assignee table.
+func (tm TaskModel) AddAssigneeToTask(ctx context.Context, assignee TaskAssignee, task Task) (Task, error) {
 	sql := "INSERT INTO assignee (ref_task_id, assignee_id) VALUES ($1, $2);"
-	_, err := tm.DB.Exec(ctx, sql, task.ID, person.ID)
+	_, err := tm.DB.Exec(ctx, sql, task.ID, assignee.ID)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.AssignTaskToPerson() -> %w", err)
 	}

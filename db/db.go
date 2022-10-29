@@ -1,3 +1,4 @@
+//nolint:lll
 package db
 
 import (
@@ -46,9 +47,12 @@ type BoardManager interface {
 	Create(ctx context.Context, board models.Board) (models.Board, error)
 	DeleteByID(ctx context.Context, boardID uint32) error
 	GetByID(ctx context.Context, boardID uint32) (models.Board, error)
-	AddPersonToBoard(ctx context.Context, person models.Person, board models.Board) (models.Board, error)
+	AddContributorToBoard(ctx context.Context, contrib models.Contributor, board models.Board) (models.Board, error)
+	RemoveContributorFromBoard(ctx context.Context, contrib models.Contributor, board models.Board) (models.Board, error)
 	AddTaskToBoard(ctx context.Context, task models.Task, board models.Board) (models.Board, error)
+	RemoveTaskFromBoard(ctx context.Context, task models.Task, board models.Board) (models.Board, error)
 	AddTagToBoard(ctx context.Context, tag models.Tag, board models.Board) (models.Board, error)
+	RemoveTagFromBoard(ctx context.Context, tag models.Tag, board models.Board) (models.Board, error)
 }
 
 // TaskManager - interface for interacting with task table in db.
@@ -58,7 +62,7 @@ type TaskManager interface {
 	GetByID(ctx context.Context, taskID uint32) (models.Task, error)
 	AddTagToTask(ctx context.Context, tag models.Tag, task models.Task) (models.Task, error)
 	RemoveTagFromTask(ctx context.Context, tag models.Tag, task models.Task) (models.Task, error)
-	AssignPersonToTask(ctx context.Context, person models.Person, task models.Task) (models.Task, error)
+	AddAssigneeToTask(ctx context.Context, assignee models.TaskAssignee, task models.Task) (models.Task, error)
 	RemoveAssignFromTask(ctx context.Context, person models.TaskAssignee, task models.Task) (models.Task, error)
 	AddSubtaskToTask(ctx context.Context, subtask models.Subtask, task models.Task) (models.Task, error)
 	RemoveSubtaskFromTask(ctx context.Context, subtask models.Subtask, task models.Task) (models.Task, error)
@@ -67,5 +71,6 @@ type TaskManager interface {
 // TagManager - interface for interacting with tag table in db.
 type TagManager interface {
 	Create(ctx context.Context, tag models.Tag) (models.Tag, error)
+	DeleteByID(ctx context.Context, tagID uint32) error
 	GetByID(ctx context.Context, tagID uint32) (models.Tag, error)
 }

@@ -114,15 +114,15 @@ func (bm BoardModel) GetByID(ctx context.Context, boardID uint32) (Board, error)
 	return obtainedBoard, nil
 }
 
-// AddPersonToBoard - adds row in contributor table with values (person.ID, board.ID).
-func (bm BoardModel) AddPersonToBoard(ctx context.Context, person Person, board Board) (Board, error) {
-	if person.ID == board.Owner.ID {
+// AddContributorToBoard - adds row in contributor table with values (person.ID, board.ID).
+func (bm BoardModel) AddContributorToBoard(ctx context.Context, contrib Contributor, board Board) (Board, error) {
+	if contrib.ID == board.Owner.ID {
 		return Board{}, fmt.Errorf("BoardModel.AddPersonToBoard ->" +
 			"person is board owner, no need to add in contributors")
 	}
 
 	sql := "INSERT INTO contributor (person_id, board_id) VALUES ($1, $2);"
-	_, err := bm.DB.Exec(ctx, sql, person.ID, board.ID)
+	_, err := bm.DB.Exec(ctx, sql, contrib.ID, board.ID)
 
 	if err != nil {
 		return Board{}, fmt.Errorf("BoardModel.AddPersonToBoard() -> %w", err)
@@ -133,6 +133,21 @@ func (bm BoardModel) AddPersonToBoard(ctx context.Context, person Person, board 
 		return Board{}, fmt.Errorf("BoardModel.AddPersonToBoard() -> %w", err)
 	}
 
+	return board, nil
+}
+
+// RemoveContributorFromBoard - removes row in contributor table with values (person.ID, board.ID).
+func (bm BoardModel) RemoveContributorFromBoard(ctx context.Context, contrib Contributor, board Board) (Board, error) {
+	sql := "DELETE FROM contributor WHERE person_id = $1 AND board_id = $2"
+	_, err := bm.DB.Exec(ctx, sql, contrib.ID, board.ID)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.RemoveContributorFromBoard() -> %w", err)
+	}
+
+	board, err = bm.GetByID(ctx, board.ID)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.RemoveContributorFromBoard() -> %w", err)
+	}
 	return board, nil
 }
 
@@ -152,6 +167,25 @@ func (bm BoardModel) AddTaskToBoard(ctx context.Context, task Task, board Board)
 	return board, nil
 }
 
+// RemoveTaskFromBoard - removes task from board.
+func (bm BoardModel) RemoveTaskFromBoard(ctx context.Context, task Task, board Board) (Board, error) {
+	if task.BoardID != board.ID {
+		return Board{}, fmt.Errorf("BoardModel.RemoveTaskFromBoard() -> task.BoardID(%d) != board.ID(%d)",
+			task.BoardID, board.ID)
+	}
+
+	err := TaskModel(bm).DeleteByID(ctx, task.ID)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.RemoveTaskFromBoard() -> %w", err)
+	}
+
+	board, err = bm.GetByID(ctx, board.ID)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.RemoveTaskFromBoard() -> %w", err)
+	}
+	return board, nil
+}
+
 // AddTagToBoard - add tag to table 'tag' in db with board_id = board.ID.
 func (bm BoardModel) AddTagToBoard(ctx context.Context, tag Tag, board Board) (Board, error) {
 	tag.BoardID = board.ID
@@ -165,6 +199,25 @@ func (bm BoardModel) AddTagToBoard(ctx context.Context, tag Tag, board Board) (B
 		return Board{}, fmt.Errorf("BoardModel.AddTagToBoard() -> %w", err)
 	}
 
+	return board, nil
+}
+
+// RemoveTagFromBoard - removes task from board.
+func (bm BoardModel) RemoveTagFromBoard(ctx context.Context, tag Tag, board Board) (Board, error) {
+	if tag.BoardID != board.ID {
+		return Board{}, fmt.Errorf("BoardModel.RemoveTagFromBoard() -> tag.BoardID(%d) != board.ID(%d)",
+			tag.BoardID, board.ID)
+	}
+
+	err := TagModel(bm).DeleteByID(ctx, tag.ID)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.RemoveTagFromBoard() -> %w", err)
+	}
+
+	board, err = bm.GetByID(ctx, board.ID)
+	if err != nil {
+		return Board{}, fmt.Errorf("BoardModel.RemoveTagFromBoard() -> %w", err)
+	}
 	return board, nil
 }
 

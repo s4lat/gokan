@@ -46,6 +46,16 @@ func (tm TagModel) Create(ctx context.Context, tag Tag) (Tag, error) {
 	return createdTag, nil
 }
 
+// DeleteByID - deletes row from table 'tag'.
+func (tm TagModel) DeleteByID(ctx context.Context, tagID uint32) error {
+	sql := "DELETE FROM tag WHERE tag_id = $1;"
+	_, err := tm.DB.Exec(ctx, sql, tagID)
+	if err != nil {
+		return fmt.Errorf("TagModel.DeleteByID() -> %w", err)
+	}
+	return nil
+}
+
 // GetByID - searching for tag in DB by ID, returning finded Tag.
 func (tm TagModel) GetByID(ctx context.Context, tagID uint32) (Tag, error) {
 	sql := "SELECT * FROM tag WHERE tag_id = $1;"
