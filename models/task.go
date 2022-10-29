@@ -39,7 +39,7 @@ type TaskModel struct {
 // Returning created Task.
 //
 // Don't use directly, to create new task use BoardModel.AddTaskToBoard.
-func (tm TaskModel) Create(t Task) (Task, error) {
+func (tm TaskModel) Create(ctx context.Context, t Task) (Task, error) {
 	sql := ("WITH inserted_task AS (" +
 		"INSERT INTO task " +
 		"(task_name, task_description, board_id, author_id) " +
@@ -48,7 +48,7 @@ func (tm TaskModel) Create(t Task) (Task, error) {
 		"FROM inserted_task JOIN person ON person_id = author_id;")
 
 	var createdTask Task
-	err := tm.DB.QueryRow(context.Background(), sql,
+	err := tm.DB.QueryRow(ctx, sql,
 		t.Name,
 		t.Description,
 		t.BoardID,
@@ -73,7 +73,7 @@ func (tm TaskModel) Create(t Task) (Task, error) {
 }
 
 // GetByID - searching for task with task_id=taskID, returning Task.
-func (tm TaskModel) GetByID(taskID uint32) (Task, error) {
+func (tm TaskModel) GetByID(ctx context.Context, taskID uint32) (Task, error) {
 	sql := ("SELECT task.*, " +
 		"person.username, person.first_name, person.last_name, person.email " +
 		"FROM task " +
@@ -81,7 +81,7 @@ func (tm TaskModel) GetByID(taskID uint32) (Task, error) {
 		"WHERE task_id = $1")
 
 	var obtainedTask Task
-	err := tm.DB.QueryRow(context.Background(), sql, taskID).Scan(
+	err := tm.DB.QueryRow(ctx, sql, taskID).Scan(
 		&obtainedTask.ID,
 		&obtainedTask.Name,
 		&obtainedTask.Description,
@@ -97,7 +97,7 @@ func (tm TaskModel) GetByID(taskID uint32) (Task, error) {
 		return Task{}, fmt.Errorf("TaskModel.GetByID() -> %w", err)
 	}
 
-	obtainedTask, err = tm.loadEverything(obtainedTask)
+	obtainedTask, err = tm.loadEverything(ctx, obtainedTask)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.GetByID() -> %w", err)
 	}
@@ -106,14 +106,14 @@ func (tm TaskModel) GetByID(taskID uint32) (Task, error) {
 }
 
 // AssignPersonToTask - assigning task to person in assignee table.
-func (tm TaskModel) AssignPersonToTask(person Person, task Task) (Task, error) {
+func (tm TaskModel) AssignPersonToTask(ctx context.Context, person Person, task Task) (Task, error) {
 	sql := "INSERT INTO assignee (ref_task_id, assignee_id) VALUES ($1, $2);"
-	_, err := tm.DB.Exec(context.Background(), sql, task.ID, person.ID)
+	_, err := tm.DB.Exec(ctx, sql, task.ID, person.ID)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.AssignTaskToPerson() -> %w", err)
 	}
 
-	task, err = tm.loadAssignees(task)
+	task, err = tm.loadAssignees(ctx, task)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.AssignTaskToPerson() -> %w", err)
 	}
@@ -121,14 +121,14 @@ func (tm TaskModel) AssignPersonToTask(person Person, task Task) (Task, error) {
 }
 
 // AddTagToTask - add tag to task in task_tag table.
-func (tm TaskModel) AddTagToTask(tag Tag, task Task) (Task, error) {
+func (tm TaskModel) AddTagToTask(ctx context.Context, tag Tag, task Task) (Task, error) {
 	sql := "INSERT INTO task_tag (ref_tag_id, ref_task_id) VALUES ($1, $2);"
-	_, err := tm.DB.Exec(context.Background(), sql, tag.ID, task.ID)
+	_, err := tm.DB.Exec(ctx, sql, tag.ID, task.ID)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.AddTagToTask() -> %w", err)
 	}
 
-	task, err = tm.loadTags(task)
+	task, err = tm.loadTags(ctx, task)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.AddTagToTask() -> %w", err)
 	}
@@ -137,15 +137,15 @@ func (tm TaskModel) AddTagToTask(tag Tag, task Task) (Task, error) {
 }
 
 // AddSubtaskToTask - add subtask to task in subtask table.
-func (tm TaskModel) AddSubtaskToTask(subtask Subtask, task Task) (Task, error) {
+func (tm TaskModel) AddSubtaskToTask(ctx context.Context, subtask Subtask, task Task) (Task, error) {
 	sql := ("INSERT INTO subtask (subtask_name, parent_task_id) " +
 		"VALUES ($1, $2);")
-	_, err := tm.DB.Exec(context.Background(), sql, subtask.Name, subtask.ParentTaskID)
+	_, err := tm.DB.Exec(ctx, sql, subtask.Name, subtask.ParentTaskID)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.AddSubtaskToTask() -> %w", err)
 	}
 
-	task, err = tm.loadSubtasks(task)
+	task, err = tm.loadSubtasks(ctx, task)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.AddSubtaskToTask() -> %w", err)
 	}
@@ -154,23 +154,23 @@ func (tm TaskModel) AddSubtaskToTask(subtask Subtask, task Task) (Task, error) {
 }
 
 // loadEverything - combines loadTags, loadSubtasks, loadAssignees in one method.
-func (tm TaskModel) loadEverything(task Task) (Task, error) {
-	task, err := tm.loadTags(task)
+func (tm TaskModel) loadEverything(ctx context.Context, task Task) (Task, error) {
+	task, err := tm.loadTags(ctx, task)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.loadEverything() -> %w", err)
 	}
 
-	task, err = tm.loadSubtasks(task)
+	task, err = tm.loadSubtasks(ctx, task)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.loadEverything() -> %w", err)
 	}
 
-	task, err = tm.loadAssignees(task)
+	task, err = tm.loadAssignees(ctx, task)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.loadEverything() -> %w", err)
 	}
 
-	task, err = tm.loadTags(task)
+	task, err = tm.loadTags(ctx, task)
 	if err != nil {
 		return Task{}, fmt.Errorf("TaskModel.loadEverything() -> %w", err)
 	}
@@ -179,12 +179,12 @@ func (tm TaskModel) loadEverything(task Task) (Task, error) {
 }
 
 // loadSubtasks - loading subtasks to Task.Subtasks list.
-func (tm TaskModel) loadSubtasks(task Task) (Task, error) {
+func (tm TaskModel) loadSubtasks(ctx context.Context, task Task) (Task, error) {
 	sql := ("SELECT subtask_id, subtask_name, parent_task_id " +
 		"FROM task JOIN subtask ON parent_task_id = task_id " +
 		"WHERE task_id = $1")
 
-	rows, _ := tm.DB.Query(context.Background(), sql, task.ID)
+	rows, _ := tm.DB.Query(ctx, sql, task.ID)
 	defer rows.Close()
 
 	var subtasks []Subtask
@@ -207,13 +207,13 @@ func (tm TaskModel) loadSubtasks(task Task) (Task, error) {
 }
 
 // loadAssignees - loading assigness to Task.Assigness list.
-func (tm TaskModel) loadAssignees(task Task) (Task, error) {
+func (tm TaskModel) loadAssignees(ctx context.Context, task Task) (Task, error) {
 	sql := ("SELECT assignee_id, " +
 		"person.username, person.first_name, person.last_name, person.email " +
 		"FROM assignee JOIN person ON person_id = assignee_id " +
 		"WHERE ref_task_id = $1")
 
-	rows, _ := tm.DB.Query(context.Background(), sql, task.ID)
+	rows, _ := tm.DB.Query(ctx, sql, task.ID)
 	defer rows.Close()
 
 	var assignees []TaskAssignee
@@ -237,13 +237,13 @@ func (tm TaskModel) loadAssignees(task Task) (Task, error) {
 }
 
 // loadTags - loading tags in Task.Tags slice.
-func (tm TaskModel) loadTags(task Task) (Task, error) {
+func (tm TaskModel) loadTags(ctx context.Context, task Task) (Task, error) {
 	sql := ("SELECT tag.* FROM task " +
 		"JOIN task_tag ON task_id = ref_task_id " +
 		"JOIN tag ON tag_id = ref_tag_id " +
 		"WHERE task_id = $1")
 
-	rows, _ := tm.DB.Query(context.Background(), sql, task.ID)
+	rows, _ := tm.DB.Query(ctx, sql, task.ID)
 	defer rows.Close()
 
 	var tags []Tag

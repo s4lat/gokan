@@ -22,14 +22,14 @@ type TagModel struct {
 // Returning created Person.
 //
 // Don't use directly, to create new tag use BoardModel.AddTagToBoard.
-func (tm TagModel) Create(tag Tag) (Tag, error) {
+func (tm TagModel) Create(ctx context.Context, tag Tag) (Tag, error) {
 	sql := ("INSERT INTO " +
 		"tag (tag_name, tag_description, board_id) " +
 		"VALUES ($1, $2, $3)" +
 		"RETURNING *;")
 
 	var createdTag Tag
-	err := tm.DB.QueryRow(context.Background(), sql,
+	err := tm.DB.QueryRow(ctx, sql,
 		tag.Name,
 		tag.Description,
 		tag.BoardID,
@@ -47,11 +47,11 @@ func (tm TagModel) Create(tag Tag) (Tag, error) {
 }
 
 // GetByID - searching for tag in DB by ID, returning finded Tag.
-func (tm TagModel) GetByID(tagID uint32) (Tag, error) {
+func (tm TagModel) GetByID(ctx context.Context, tagID uint32) (Tag, error) {
 	sql := "SELECT * FROM tag WHERE tag_id = $1;"
 
 	var obtainedTag Tag
-	err := tm.DB.QueryRow(context.Background(), sql, tagID).Scan(
+	err := tm.DB.QueryRow(ctx, sql, tagID).Scan(
 		&obtainedTag.ID,
 		&obtainedTag.Name,
 		&obtainedTag.Description,

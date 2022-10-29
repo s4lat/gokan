@@ -1,6 +1,8 @@
 package db
 
 import (
+	"context"
+
 	"github.com/s4lat/gokan/models"
 )
 
@@ -26,38 +28,39 @@ func NewDB(dbConn models.DBConn) DB {
 
 // SystemManager - interface for interacting with db structure.
 type SystemManager interface {
-	RecreateAllTables() error
-	IsTableExist(tableName string) (bool, error)
+	RecreateAllTables(ctx context.Context) error
+	IsTableExist(ctx context.Context, tableName string) (bool, error)
 }
 
 // PersonManager - interface for interacting with person table in db.
 type PersonManager interface {
-	Create(person models.Person) (models.Person, error)
-	GetByID(personID uint32) (models.Person, error)
-	GetByEmail(email string) (models.Person, error)
-	GetByUsername(username string) (models.Person, error)
+	Create(ctx context.Context, person models.Person) (models.Person, error)
+	GetByID(ctx context.Context, personID uint32) (models.Person, error)
+	GetByEmail(ctx context.Context, email string) (models.Person, error)
+	GetByUsername(ctx context.Context, username string) (models.Person, error)
 }
 
 // BoardManager - interface for interacting with board table in db.
 type BoardManager interface {
-	Create(board models.Board) (models.Board, error)
-	GetByID(boardID uint32) (models.Board, error)
-	AddPersonToBoard(person models.Person, board models.Board) (models.Board, error)
-	AddTaskToBoard(task models.Task, board models.Board) (models.Board, error)
-	AddTagToBoard(tag models.Tag, board models.Board) (models.Board, error)
+	Create(ctx context.Context, board models.Board) (models.Board, error)
+	DeleteByID(ctx context.Context, boardID uint32) error
+	GetByID(ctx context.Context, boardID uint32) (models.Board, error)
+	AddPersonToBoard(ctx context.Context, person models.Person, board models.Board) (models.Board, error)
+	AddTaskToBoard(ctx context.Context, task models.Task, board models.Board) (models.Board, error)
+	AddTagToBoard(ctx context.Context, tag models.Tag, board models.Board) (models.Board, error)
 }
 
 // TaskManager - interface for interacting with task table in db.
 type TaskManager interface {
-	Create(task models.Task) (models.Task, error)
-	GetByID(taskID uint32) (models.Task, error)
-	AddTagToTask(tag models.Tag, task models.Task) (models.Task, error)
-	AssignPersonToTask(person models.Person, task models.Task) (models.Task, error)
-	AddSubtaskToTask(subtask models.Subtask, task models.Task) (models.Task, error)
+	Create(ctx context.Context, task models.Task) (models.Task, error)
+	GetByID(ctx context.Context, taskID uint32) (models.Task, error)
+	AddTagToTask(ctx context.Context, tag models.Tag, task models.Task) (models.Task, error)
+	AssignPersonToTask(ctx context.Context, person models.Person, task models.Task) (models.Task, error)
+	AddSubtaskToTask(ctx context.Context, subtask models.Subtask, task models.Task) (models.Task, error)
 }
 
 // TagManager - interface for interacting with tag table in db.
 type TagManager interface {
-	Create(tag models.Tag) (models.Tag, error)
-	GetByID(tagID uint32) (models.Tag, error)
+	Create(ctx context.Context, tag models.Tag) (models.Tag, error)
+	GetByID(ctx context.Context, tagID uint32) (models.Tag, error)
 }

@@ -60,14 +60,14 @@ type PersonModel struct {
 
 // Create - Creates new row in table 'person'.
 // Returning created Person.
-func (pm PersonModel) Create(person Person) (Person, error) {
+func (pm PersonModel) Create(ctx context.Context, person Person) (Person, error) {
 	sql := ("INSERT INTO " +
 		"person (username, first_name, last_name, email, password_hash) " +
 		"VALUES ($1, $2, $3, $4, $5)" +
 		"RETURNING *;")
 
 	var createdPerson Person
-	err := pm.DB.QueryRow(context.Background(), sql,
+	err := pm.DB.QueryRow(ctx, sql,
 		person.Username,
 		person.FirstName,
 		person.LastName,
@@ -90,11 +90,11 @@ func (pm PersonModel) Create(person Person) (Person, error) {
 }
 
 // GetByID - searching for person in DB by id, returning finded Person.
-func (pm PersonModel) GetByID(personID uint32) (Person, error) {
+func (pm PersonModel) GetByID(ctx context.Context, personID uint32) (Person, error) {
 	sql := "SELECT * FROM person WHERE person_id = $1;"
 
 	var obtainedPerson Person
-	err := pm.DB.QueryRow(context.Background(), sql, personID).Scan(
+	err := pm.DB.QueryRow(ctx, sql, personID).Scan(
 		&obtainedPerson.ID,
 		&obtainedPerson.Username,
 		&obtainedPerson.FirstName,
@@ -107,7 +107,7 @@ func (pm PersonModel) GetByID(personID uint32) (Person, error) {
 		return Person{}, fmt.Errorf("PersonModel.GetByID() -> %w", err)
 	}
 
-	obtainedPerson, err = pm.loadEverything(obtainedPerson)
+	obtainedPerson, err = pm.loadEverything(ctx, obtainedPerson)
 	if err != nil {
 		return Person{}, fmt.Errorf("PersonModel.GetByID() -> %w", err)
 	}
@@ -116,11 +116,11 @@ func (pm PersonModel) GetByID(personID uint32) (Person, error) {
 }
 
 // GetByEmail - searching for person in DB by email, returning finded Person.
-func (pm PersonModel) GetByEmail(email string) (Person, error) {
+func (pm PersonModel) GetByEmail(ctx context.Context, email string) (Person, error) {
 	sql := "SELECT * FROM person WHERE email = $1;"
 
 	var obtainedPerson Person
-	err := pm.DB.QueryRow(context.Background(), sql, email).Scan(
+	err := pm.DB.QueryRow(ctx, sql, email).Scan(
 		&obtainedPerson.ID,
 		&obtainedPerson.Username,
 		&obtainedPerson.FirstName,
@@ -133,7 +133,7 @@ func (pm PersonModel) GetByEmail(email string) (Person, error) {
 		return Person{}, fmt.Errorf("PersonModel.GetByEmail() -> %w", err)
 	}
 
-	obtainedPerson, err = pm.loadEverything(obtainedPerson)
+	obtainedPerson, err = pm.loadEverything(ctx, obtainedPerson)
 	if err != nil {
 		return Person{}, fmt.Errorf("PersonModel.GetByEmail() -> %w", err)
 	}
@@ -142,11 +142,11 @@ func (pm PersonModel) GetByEmail(email string) (Person, error) {
 }
 
 // GetByUsername - searching for person in DB by username, returning finded Person.
-func (pm PersonModel) GetByUsername(username string) (Person, error) {
+func (pm PersonModel) GetByUsername(ctx context.Context, username string) (Person, error) {
 	sql := "SELECT * FROM person WHERE username = $1;"
 
 	var obtainedPerson Person
-	err := pm.DB.QueryRow(context.Background(), sql, username).Scan(
+	err := pm.DB.QueryRow(ctx, sql, username).Scan(
 		&obtainedPerson.ID,
 		&obtainedPerson.Username,
 		&obtainedPerson.FirstName,
@@ -158,7 +158,7 @@ func (pm PersonModel) GetByUsername(username string) (Person, error) {
 		return Person{}, fmt.Errorf("PersonModel.GetByUsername() -> %w", err)
 	}
 
-	obtainedPerson, err = pm.loadEverything(obtainedPerson)
+	obtainedPerson, err = pm.loadEverything(ctx, obtainedPerson)
 	if err != nil {
 		return Person{}, fmt.Errorf("PersonModel.GetByUsername() -> %w", err)
 	}
@@ -167,13 +167,13 @@ func (pm PersonModel) GetByUsername(username string) (Person, error) {
 }
 
 // loadEverything - combines loadAssignedTasks, loadBoards  in one method.
-func (pm PersonModel) loadEverything(person Person) (Person, error) {
-	person, err := pm.loadAssignedTasks(person)
+func (pm PersonModel) loadEverything(ctx context.Context, person Person) (Person, error) {
+	person, err := pm.loadAssignedTasks(ctx, person)
 	if err != nil {
 		return Person{}, fmt.Errorf("PersonModel.loadEverything() -> %w", err)
 	}
 
-	person, err = pm.loadBoards(person)
+	person, err = pm.loadBoards(ctx, person)
 	if err != nil {
 		return Person{}, fmt.Errorf("PersonModel.loadEverything() -> %w", err)
 	}
@@ -182,10 +182,10 @@ func (pm PersonModel) loadEverything(person Person) (Person, error) {
 }
 
 // loadAssignedTasks - loading assigned to person tasks in Person.AssignedTasks slice.
-func (pm PersonModel) loadAssignedTasks(person Person) (Person, error) {
+func (pm PersonModel) loadAssignedTasks(ctx context.Context, person Person) (Person, error) {
 	sql := "SELECT ref_task_id FROM assignee WHERE assignee_id = $1"
 
-	rows, _ := pm.DB.Query(context.Background(), sql, person.ID)
+	rows, _ := pm.DB.Query(ctx, sql, person.ID)
 
 	localTaskModel := TaskModel(pm)
 	defer rows.Close()
@@ -197,7 +197,7 @@ func (pm PersonModel) loadAssignedTasks(person Person) (Person, error) {
 			return Person{}, fmt.Errorf("PersonModel.loadAssignedTasks() -> %w", err)
 		}
 
-		task, err := localTaskModel.GetByID(taskID)
+		task, err := localTaskModel.GetByID(ctx, taskID)
 		if err != nil {
 			return Person{}, fmt.Errorf("PersonModel.loadAssignedTasks() -> %w", err)
 		}
@@ -214,7 +214,7 @@ func (pm PersonModel) loadAssignedTasks(person Person) (Person, error) {
 }
 
 // loadBoards - loads owned and contributed by person, boards.
-func (pm PersonModel) loadBoards(person Person) (Person, error) {
+func (pm PersonModel) loadBoards(ctx context.Context, person Person) (Person, error) {
 	sql := ("SELECT board.*, username, first_name, last_name, email " +
 		"FROM board JOIN person ON person_id = owner_id " +
 		"WHERE owner_id = $1 " +
@@ -225,7 +225,7 @@ func (pm PersonModel) loadBoards(person Person) (Person, error) {
 		"JOIN person ON board.owner_id = person.person_id " +
 		"WHERE contributor.person_id = $1")
 
-	rows, _ := pm.DB.Query(context.Background(), sql, person.ID)
+	rows, _ := pm.DB.Query(ctx, sql, person.ID)
 	var boards []SmallBoard
 	for rows.Next() {
 		var board SmallBoard
