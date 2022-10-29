@@ -24,7 +24,7 @@ type SmallBoard struct {
 }
 
 // Small - return SmallBoard representation of Person.
-func (b *Board) Small() SmallBoard {
+func (b Board) Small() SmallBoard {
 	return SmallBoard{Name: b.Name, Owner: b.Owner, ID: b.ID}
 }
 

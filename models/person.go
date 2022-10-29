@@ -28,7 +28,7 @@ type SmallPerson struct {
 }
 
 // Small - return SmallPerson representation of Person.
-func (p *Person) Small() SmallPerson {
+func (p Person) Small() SmallPerson {
 	return SmallPerson{Username: p.Username, FirstName: p.FirstName,
 		LastName: p.LastName, Email: p.Email, ID: p.ID}
 }
@@ -87,6 +87,16 @@ func (pm PersonModel) Create(ctx context.Context, person Person) (Person, error)
 	}
 
 	return createdPerson, nil
+}
+
+// DeleteByID - deletes row from table 'person'.
+func (pm PersonModel) DeleteByID(ctx context.Context, personID uint32) error {
+	sql := "DELETE FROM person WHERE person_id = $1;"
+	_, err := pm.DB.Exec(ctx, sql, personID)
+	if err != nil {
+		return fmt.Errorf("PersonModel.DeleteByID() -> %w", err)
+	}
+	return nil
 }
 
 // GetByID - searching for person in DB by id, returning finded Person.

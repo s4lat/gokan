@@ -942,3 +942,241 @@ func TestBoardDeleteByID(t *testing.T) {
 		t.Error("Board.DeleteByID() not throwing error when deleting non-existent board")
 	}
 }
+
+func TestPersonDeleteByID(t *testing.T) {
+	ctx := context.Background()
+
+	if err := db.System.RecreateAllTables(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, mockedPerson := range mockedData.Persons {
+		err := db.Person.DeleteByID(ctx, mockedPerson.ID)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+
+	if err := db.Person.DeleteByID(ctx, 131); err != nil {
+		t.Error("Person.DeleteByID() not throwing error when deleting non-existent person")
+	}
+}
+
+func TestTaskDeleteByID(t *testing.T) {
+	ctx := context.Background()
+
+	if err := db.System.RecreateAllTables(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedTasks(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, mockedTask := range mockedData.Tasks {
+		err := db.Task.DeleteByID(ctx, mockedTask.ID)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+
+	if err := db.Task.DeleteByID(ctx, 131); err != nil {
+		t.Error("Task.DeleteByID() not throwing error when deleting non-existent task")
+	}
+}
+
+func TestTaskRemoveTagFromTask(t *testing.T) {
+	ctx := context.Background()
+
+	if err := db.System.RecreateAllTables(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedTasks(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedTags(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, taskTag := range mockedData.TaskTag {
+		tag, _ := db.Tag.GetByID(ctx, taskTag.TagID)
+		task, _ := db.Task.GetByID(ctx, taskTag.TaskID)
+		task, _ = db.Task.AddTagToTask(ctx, tag, task)
+	}
+
+	var tasks []models.Task
+	for _, mockedTask := range mockedData.Tasks {
+		task, _ := db.Task.GetByID(ctx, mockedTask.ID)
+		tasks = append(tasks, task)
+	}
+
+	for _, task := range tasks {
+	OuterFor:
+		for _, tagToDel := range task.Tags {
+			t.Logf("Task.Tags before delete: %v", task.Tags)
+			updatedTask, err := db.Task.RemoveTagFromTask(ctx, tagToDel, task)
+			if err != nil {
+				t.Error(err)
+			}
+
+			for _, tag := range updatedTask.Tags {
+				if tagToDel.ID == tag.ID {
+					t.Errorf("Tag not deleted from task.Tags: \n\t%v\n\t%v", tag, updatedTask.Tags)
+					continue OuterFor
+				}
+			}
+			t.Logf("Task.Tags after delete: %v", updatedTask.Tags)
+			task = updatedTask
+		}
+	}
+}
+
+func TestTaskRemoveAssignFromTask(t *testing.T) {
+	ctx := context.Background()
+
+	if err := db.System.RecreateAllTables(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedTasks(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedTags(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, assignee := range mockedData.Assignees {
+		person, _ := db.Person.GetByID(ctx, assignee.AssigneeID)
+		task, _ := db.Task.GetByID(ctx, assignee.TaskID)
+		_, _ = db.Task.AssignPersonToTask(ctx, person, task)
+	}
+
+	var tasks []models.Task
+	for _, mockedTask := range mockedData.Tasks {
+		task, _ := db.Task.GetByID(ctx, mockedTask.ID)
+		tasks = append(tasks, task)
+	}
+
+	for _, task := range tasks {
+	OuterFor:
+		for _, assigneeToDel := range task.Assignees {
+			t.Logf("Task.Assignees before delete: %v", task.Assignees)
+			updatedTask, err := db.Task.RemoveAssignFromTask(ctx, assigneeToDel, task)
+			if err != nil {
+				t.Error(err)
+			}
+
+			for _, assignee := range updatedTask.Assignees {
+				if assigneeToDel.ID == assignee.ID {
+					t.Errorf("Assignee not deleted from task.Assignees: \n\t%v\n\t%v", assignee, updatedTask.Assignees)
+					continue OuterFor
+				}
+			}
+			t.Logf("Task.Assignees after delete: %v", updatedTask.Assignees)
+			task = updatedTask
+		}
+	}
+}
+
+func TestTaskRemoveSubtaskFromTask(t *testing.T) {
+	ctx := context.Background()
+
+	if err := db.System.RecreateAllTables(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	mockedData, err := LoadMockData()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedPersons(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mockedData.CreateMockedBoards(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mockedData.CreateMockedTasks(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, subtask := range mockedData.Subtasks {
+		task, _ := db.Task.GetByID(ctx, subtask.ParentTaskID)
+		task, _ = db.Task.AddSubtaskToTask(ctx, subtask, task)
+	}
+
+	var tasks []models.Task
+	for _, mockedTask := range mockedData.Tasks {
+		task, _ := db.Task.GetByID(ctx, mockedTask.ID)
+		tasks = append(tasks, task)
+	}
+
+	for _, task := range tasks {
+	OuterFor:
+		for _, subtaskToDel := range task.Subtasks {
+			t.Logf("Task.Subtasks before delete: %v", task.Subtasks)
+			updatedTask, err := db.Task.RemoveSubtaskFromTask(ctx, subtaskToDel, task)
+			if err != nil {
+				t.Error(err)
+			}
+
+			for _, subtask := range updatedTask.Subtasks {
+				if subtaskToDel.ID == subtask.ID {
+					t.Errorf("Subtask not deleted from task.Subtasks: \n\t%v\n\t%v", subtask, updatedTask.Subtasks)
+					continue OuterFor
+				}
+			}
+			t.Logf("Task.Subtasks after delete: %v", updatedTask.Subtasks)
+			task = updatedTask
+		}
+	}
+}

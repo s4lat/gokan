@@ -72,6 +72,16 @@ func (tm TaskModel) Create(ctx context.Context, t Task) (Task, error) {
 	return createdTask, nil
 }
 
+// DeleteByID - deletes row from table 'task'.
+func (tm TaskModel) DeleteByID(ctx context.Context, taskID uint32) error {
+	sql := "DELETE FROM task WHERE task_id = $1;"
+	_, err := tm.DB.Exec(ctx, sql, taskID)
+	if err != nil {
+		return fmt.Errorf("TaskModel.DeleteByID() -> %w", err)
+	}
+	return nil
+}
+
 // GetByID - searching for task with task_id=taskID, returning Task.
 func (tm TaskModel) GetByID(ctx context.Context, taskID uint32) (Task, error) {
 	sql := ("SELECT task.*, " +
@@ -120,6 +130,21 @@ func (tm TaskModel) AssignPersonToTask(ctx context.Context, person Person, task 
 	return task, nil
 }
 
+// RemoveAssignFromTask - removes row from assignee table;.
+func (tm TaskModel) RemoveAssignFromTask(ctx context.Context, assignee TaskAssignee, task Task) (Task, error) {
+	sql := "DELETE FROM assignee WHERE ref_task_id = $1 AND assignee_id = $2"
+	_, err := tm.DB.Exec(ctx, sql, task.ID, assignee.ID)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.RemoveAssignFromTask() -> %w", err)
+	}
+
+	updateTask, err := tm.GetByID(ctx, task.ID)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.RemoveAssignFromTask() -> %w", err)
+	}
+	return updateTask, nil
+}
+
 // AddTagToTask - add tag to task in task_tag table.
 func (tm TaskModel) AddTagToTask(ctx context.Context, tag Tag, task Task) (Task, error) {
 	sql := "INSERT INTO task_tag (ref_tag_id, ref_task_id) VALUES ($1, $2);"
@@ -134,6 +159,21 @@ func (tm TaskModel) AddTagToTask(ctx context.Context, tag Tag, task Task) (Task,
 	}
 
 	return task, nil
+}
+
+// RemoveTagFromTask - removes row from task_tag table;.
+func (tm TaskModel) RemoveTagFromTask(ctx context.Context, tag Tag, task Task) (Task, error) {
+	sql := "DELETE FROM task_tag WHERE ref_tag_id = $1 AND ref_task_id = $2"
+	_, err := tm.DB.Exec(ctx, sql, tag.ID, task.ID)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.RemoveTagFromTask() -> %w", err)
+	}
+
+	updatedTask, err := tm.GetByID(ctx, task.ID)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.RemoveTagFromTask() -> %w", err)
+	}
+	return updatedTask, nil
 }
 
 // AddSubtaskToTask - add subtask to task in subtask table.
@@ -151,6 +191,21 @@ func (tm TaskModel) AddSubtaskToTask(ctx context.Context, subtask Subtask, task 
 	}
 
 	return task, nil
+}
+
+// RemoveSubtaskFromTask - removes row from subtask table;.
+func (tm TaskModel) RemoveSubtaskFromTask(ctx context.Context, subtask Subtask, task Task) (Task, error) {
+	sql := "DELETE FROM subtask WHERE subtask_id = $1"
+	_, err := tm.DB.Exec(ctx, sql, subtask.ID)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.RemoveSubtaskFromTask() -> %w", err)
+	}
+
+	updatedTask, err := tm.GetByID(ctx, task.ID)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskModel.RemoveSubtaskFromTask() -> %w", err)
+	}
+	return updatedTask, nil
 }
 
 // loadEverything - combines loadTags, loadSubtasks, loadAssignees in one method.
