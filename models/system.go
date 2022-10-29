@@ -11,8 +11,8 @@ type SystemModel struct {
 }
 
 // RecreateAllTables - drops previously created table and creates tables required by the GoKan.
-func (sm SystemModel) RecreateAllTables() error {
-	err := sm.dropAllTables()
+func (sm SystemModel) RecreateAllTables(ctx context.Context) error {
+	err := sm.dropAllTables(ctx)
 	if err != nil {
 		return fmt.Errorf("RecreateAllTables() -> %w", err)
 	}
@@ -98,7 +98,7 @@ func (sm SystemModel) RecreateAllTables() error {
 	}
 
 	for _, sql := range sqlStrings {
-		if _, err := sm.DB.Exec(context.Background(), sql); err != nil {
+		if _, err := sm.DB.Exec(ctx, sql); err != nil {
 			return fmt.Errorf("RecreateAllTables() -> %w", err)
 		}
 	}
@@ -107,14 +107,14 @@ func (sm SystemModel) RecreateAllTables() error {
 }
 
 // IsTableExist - returning `true` if table exist in 'public' scheme, else `false`.
-func (sm SystemModel) IsTableExist(tableName string) (bool, error) {
+func (sm SystemModel) IsTableExist(ctx context.Context, tableName string) (bool, error) {
 	const sql = ("" +
 		"SELECT EXISTS (" +
 		"SELECT FROM pg_tables " +
 		"WHERE schemaname = 'public' " +
 		"AND tablename = $1);")
 
-	row := sm.DB.QueryRow(context.Background(), sql, tableName)
+	row := sm.DB.QueryRow(ctx, sql, tableName)
 
 	var isExist bool
 	if err := row.Scan(&isExist); err != nil {
@@ -125,17 +125,17 @@ func (sm SystemModel) IsTableExist(tableName string) (bool, error) {
 }
 
 // dropAllTables - drops public scheme with all tables.
-func (sm SystemModel) dropAllTables() error {
+func (sm SystemModel) dropAllTables(ctx context.Context) error {
 	const (
 		sql1 = "DROP SCHEMA IF EXISTS public CASCADE"
 		sql2 = "CREATE SCHEMA public;"
 	)
 
-	if _, err := sm.DB.Exec(context.Background(), sql1); err != nil {
+	if _, err := sm.DB.Exec(ctx, sql1); err != nil {
 		return fmt.Errorf("dropAllTables() -> %w", err)
 	}
 
-	if _, err := sm.DB.Exec(context.Background(), sql2); err != nil {
+	if _, err := sm.DB.Exec(ctx, sql2); err != nil {
 		return fmt.Errorf("dropAllTables() -> %w", err)
 	}
 
