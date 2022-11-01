@@ -1,5 +1,5 @@
 //nolint:gocognit, errcheck, gosec
-package db
+package models_test
 
 import (
 	"context"
@@ -14,11 +14,12 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/s4lat/gokan/database"
 	"github.com/s4lat/gokan/models"
 )
 
 var DBURL = "postgres://user:password@localhost:5432/test"
-var db DB
+var db database.DB
 
 type MockedData struct {
 	Persons  []models.Person  `json:"persons"`
@@ -43,7 +44,7 @@ type MockedData struct {
 }
 
 func LoadMockData() (MockedData, error) {
-	jsonData, err := os.ReadFile("mock_db.json")
+	jsonData, err := os.ReadFile("testdata/mock_db.json")
 	if err != nil {
 		return MockedData{}, fmt.Errorf("LoadMockData() -> %w", err)
 	}
@@ -103,7 +104,7 @@ func TestMain(m *testing.M) {
 	}
 
 	dbConn := models.DBConn(dbPool)
-	db = NewDB(dbConn)
+	db = database.NewDB(dbConn)
 	m.Run()
 }
 
