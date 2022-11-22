@@ -1,32 +1,28 @@
 //nolint:gocognit, errcheck, gosec
-package models_test
+package database
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/s4lat/gokan/database"
-	"github.com/s4lat/gokan/models"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var DBURL = "postgres://user:password@localhost:5432/test"
-var db database.DB
+var DBURL = os.Getenv("TEST_DB_URL")
+var db DB
 
 type MockedData struct {
-	Persons  []models.Person  `json:"persons"`
-	Boards   []models.Board   `json:"boards"`
-	Tasks    []models.Task    `json:"tasks"`
-	Tags     []models.Tag     `json:"tags"`
-	Subtasks []models.Subtask `json:"subtasks"`
+	Persons  []Person  `json:"persons"`
+	Boards   []Board   `json:"boards"`
+	Tasks    []Task    `json:"tasks"`
+	Tags     []Tag     `json:"tags"`
+	Subtasks []Subtask `json:"subtasks"`
 	TaskTag  []struct {
 		TaskID uint32 `json:"ref_task_id"`
 		TagID  uint32 `json:"ref_tag_id"`
@@ -98,13 +94,18 @@ func (md *MockedData) CreateMockedTags() error {
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
+
+	if len(DBURL) == 0 {
+		log.Fatal("Environment variable 'TEST_DB_URL' is not set")
+	}
+
 	dbPool, err := pgxpool.New(ctx, DBURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	dbConn := models.DBConn(dbPool)
-	db = database.NewDB(dbConn)
+	dbConn := DBConn(dbPool)
+	db = NewDB(dbConn)
 	m.Run()
 }
 
@@ -154,7 +155,7 @@ func TestPersonCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
+	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
 	for _, mockedPerson := range mockedData.Persons {
 		createdPerson, err := db.Person.Create(ctx, mockedPerson)
 		if err != nil {
@@ -193,7 +194,7 @@ func TestPersonGetByID(t *testing.T) {
 		t.Error("Searching for user with non-existent ID not throwing error")
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards")
+	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards")
 	for _, mockedPerson := range mockedData.Persons {
 		obtainedPerson, err := db.Person.GetByID(ctx, mockedPerson.ID)
 		if err != nil {
@@ -228,7 +229,7 @@ func TestPersonGetByEmail(t *testing.T) {
 		t.Error("Searching for user with non-existent email not throwing error")
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
+	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
 	for _, mockedPerson := range mockedData.Persons {
 		obtainedPerson, err := db.Person.GetByEmail(ctx, mockedPerson.Email)
 		if err != nil {
@@ -263,7 +264,7 @@ func TestPersonGetByUsername(t *testing.T) {
 		t.Error("Searching for user with non-existent username not throwing error")
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Person{}, "Boards", "AssignedTasks")
+	cmpIgnore := cmpopts.IgnoreFields(Person{}, "Boards", "AssignedTasks")
 	for _, mockedPerson := range mockedData.Persons {
 		obtainedPerson, err := db.Person.GetByUsername(ctx, mockedPerson.Username)
 		if err != nil {
@@ -294,7 +295,7 @@ func TestBoardCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Board{}, "Contributors", "Tasks", "Tags")
+	cmpIgnore := cmpopts.IgnoreFields(Board{}, "Contributors", "Tasks", "Tags")
 	for _, board := range mockedData.Boards {
 		t.Logf("%v", board)
 		createdBoard, err := db.Board.Create(ctx, board)
@@ -310,7 +311,7 @@ func TestBoardCreate(t *testing.T) {
 		t.Logf("Created: %v", createdBoard)
 	}
 
-	badBoard := models.Board{Name: "badBoard", Owner: models.BoardOwner{ID: 1337}}
+	badBoard := Board{Name: "badBoard", Owner: BoardOwner{ID: 1337}}
 	if _, err := db.Board.Create(ctx, badBoard); err == nil {
 		t.Error("BoardModel.Create() does't throw error when creating rows with non-existent owner_id")
 	}
@@ -336,7 +337,7 @@ func TestBoardGetByID(t *testing.T) {
 		t.Error("Searching for board with non-existent boardID not throwing error")
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Board{}, "Contributors", "Tasks", "Tags")
+	cmpIgnore := cmpopts.IgnoreFields(Board{}, "Contributors", "Tasks", "Tags")
 	for _, mockedBoard := range mockedData.Boards {
 		obtainedBoard, err := db.Board.GetByID(ctx, mockedBoard.ID)
 		if err != nil {
@@ -368,7 +369,7 @@ func TestTaskCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "Subtasks", "Tags", "Assignees")
+	cmpIgnore := cmpopts.IgnoreFields(Task{}, "Subtasks", "Tags", "Assignees")
 	for _, mockedTask := range mockedData.Tasks {
 		createdTask, err := db.Task.Create(ctx, mockedTask)
 		if err != nil {
@@ -407,7 +408,7 @@ func TestTaskGetByID(t *testing.T) {
 		t.Error("Searching for task with non-existent taskID not throwing error")
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "Subtasks", "Tags")
+	cmpIgnore := cmpopts.IgnoreFields(Task{}, "Subtasks", "Tags")
 	for _, mockedTask := range mockedData.Tasks {
 		obtainedTask, err := db.Task.GetByID(ctx, mockedTask.ID)
 		if err != nil {
@@ -441,7 +442,7 @@ func TestTagCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Tag{}, "ID")
+	cmpIgnore := cmpopts.IgnoreFields(Tag{}, "ID")
 	for _, mockedTag := range mockedData.Tags {
 		createdTag, err := db.Tag.Create(ctx, mockedTag)
 		if err != nil {
@@ -482,7 +483,7 @@ func TestTagGetByID(t *testing.T) {
 		t.Error("Searching for tag with non-existent tagID not throwing error")
 	}
 
-	cmpIgnore := cmpopts.IgnoreFields(models.Task{}, "ID", "Assignees")
+	cmpIgnore := cmpopts.IgnoreFields(Task{}, "ID", "Assignees")
 	for _, mockedTag := range mockedData.Tags {
 		obtainedTag, err := db.Tag.GetByID(ctx, mockedTag.ID)
 		if err != nil {
@@ -587,7 +588,7 @@ OuterFor:
 			t.Error(err)
 		}
 
-		task, err = db.Task.AddAssigneeToTask(ctx, models.TaskAssignee(person.Small()), task)
+		task, err = db.Task.AddAssigneeToTask(ctx, TaskAssignee(person.Small()), task)
 		if err != nil {
 			t.Error(err)
 		}
@@ -766,7 +767,7 @@ OuterFor:
 			t.Error(err)
 		}
 
-		board, err = db.Board.AddContributorToBoard(ctx, models.Contributor(person.Small()), board)
+		board, err = db.Board.AddContributorToBoard(ctx, Contributor(person.Small()), board)
 		if err != nil {
 			t.Error(err)
 		}
@@ -823,7 +824,7 @@ OuterFor:
 			t.Error(err)
 		}
 
-		mockedTask, err = db.Task.AddAssigneeToTask(ctx, models.TaskAssignee(person.Small()), mockedTask)
+		mockedTask, err = db.Task.AddAssigneeToTask(ctx, TaskAssignee(person.Small()), mockedTask)
 		if err != nil {
 			t.Error(err)
 		}
@@ -878,7 +879,7 @@ func TestPersonLoadBoards(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		board, err = db.Board.AddContributorToBoard(ctx, models.Contributor(person.Small()), board)
+		board, err = db.Board.AddContributorToBoard(ctx, Contributor(person.Small()), board)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1076,7 +1077,7 @@ func TestTaskRemoveTagFromTask(t *testing.T) {
 		task, _ = db.Task.AddTagToTask(ctx, tag, task)
 	}
 
-	var tasks []models.Task
+	var tasks []Task
 	for _, mockedTask := range mockedData.Tasks {
 		task, _ := db.Task.GetByID(ctx, mockedTask.ID)
 		tasks = append(tasks, task)
@@ -1133,10 +1134,10 @@ func TestTaskRemoveAssignFromTask(t *testing.T) {
 	for _, assignee := range mockedData.Assignees {
 		person, _ := db.Person.GetByID(ctx, assignee.AssigneeID)
 		task, _ := db.Task.GetByID(ctx, assignee.TaskID)
-		_, _ = db.Task.AddAssigneeToTask(ctx, models.TaskAssignee(person.Small()), task)
+		_, _ = db.Task.AddAssigneeToTask(ctx, TaskAssignee(person.Small()), task)
 	}
 
-	var tasks []models.Task
+	var tasks []Task
 	for _, mockedTask := range mockedData.Tasks {
 		task, _ := db.Task.GetByID(ctx, mockedTask.ID)
 		tasks = append(tasks, task)
@@ -1191,7 +1192,7 @@ func TestTaskRemoveSubtaskFromTask(t *testing.T) {
 		task, _ = db.Task.AddSubtaskToTask(ctx, subtask, task)
 	}
 
-	var tasks []models.Task
+	var tasks []Task
 	for _, mockedTask := range mockedData.Tasks {
 		task, _ := db.Task.GetByID(ctx, mockedTask.ID)
 		tasks = append(tasks, task)
@@ -1241,7 +1242,7 @@ func TestBoardRemoveTaskFromBoard(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var boards []models.Board
+	var boards []Board
 	for _, mockedBoard := range mockedData.Boards {
 		board, _ := db.Board.GetByID(ctx, mockedBoard.ID)
 		boards = append(boards, board)
@@ -1294,10 +1295,10 @@ func TestBoardRRemoveContributorFromBoard(t *testing.T) {
 	for _, contributor := range mockedData.Contributors {
 		board, _ := db.Board.GetByID(ctx, contributor.BoardID)
 		person, _ := db.Person.GetByID(ctx, contributor.PersonID)
-		db.Board.AddContributorToBoard(ctx, models.Contributor(person.Small()), board)
+		db.Board.AddContributorToBoard(ctx, Contributor(person.Small()), board)
 	}
 
-	var boards []models.Board
+	var boards []Board
 	for _, mockedBoard := range mockedData.Boards {
 		board, _ := db.Board.GetByID(ctx, mockedBoard.ID)
 		boards = append(boards, board)
@@ -1352,7 +1353,7 @@ func TestBoardRemoveTagFromBoard(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var boards []models.Board
+	var boards []Board
 	for _, mockedBoard := range mockedData.Boards {
 		board, _ := db.Board.GetByID(ctx, mockedBoard.ID)
 		boards = append(boards, board)

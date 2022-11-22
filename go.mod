@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/google/go-cmp v0.5.9
+	github.com/gorilla/mux v1.8.0
 	github.com/jackc/pgx/v5 v5.0.3
 )
 

@@ -16,3 +16,4 @@
 *.DS_Store
 data_er.png
 shared/.nothing
+.env
